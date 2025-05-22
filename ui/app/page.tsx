@@ -1,11 +1,15 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import Navbar from "@/components/navbar";
 export default function Home() {
 
 
   return (
     <div className="items-center justify-items-center min-h-screen bg-[#14213D] text-[#FCA311]">
+      <header className="w-full">
+        <Navbar />
+      </header>
       <main className="flex flex-col items-center justify-start w-full p-10 sm:items-start h-full">
         <div className="mb-10 md:mb-0 h-screen flex flex-col justify-center w-screen">
           <div className="flex flex-row items-center justify-between px-12 w-full">
