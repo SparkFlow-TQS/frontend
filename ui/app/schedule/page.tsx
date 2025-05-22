@@ -1,0 +1,107 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { MapPin, Clock, RotateCw, Globe } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+
+export default function SchedulePage() {
+    const [date, setDate] = useState<Date | undefined>(new Date())
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:15am-10h45am")
+
+    return (
+        <div className="min-h-screen flex flex-col bg-[#14213d]">
+            <main className="flex-1 p-4 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto text-white">
+                    {/* Station Info */}
+                    <div className="space-y-6">
+                        <div>
+                            <h2 className="text-2xl font-bold">Station</h2>
+                            <h3 className="text-xl font-semibold text-[#FFA500] mt-2">AVR-00023/24 - Mercadona</h3>
+                            <p className="mt-1">Aveiro</p>
+                            <p className="text-sm mt-1">Lat/Long: 40.623361, -8.650256</p>
+
+                            <Button variant="outline" className="mt-4 flex items-center gap-2">
+                                <MapPin className="h-5 w-5" />
+                                NAVIGATE
+                            </Button>
+                        </div>
+
+                        <div>
+                            <h2 className="text-2xl font-bold">Equipment Details</h2>
+                            <p className="mt-2">Number of Stations/Bays: 1</p>
+
+                            <div className="mt-4 flex items-start gap-4">
+                                <div className="bg-gray-800 p-3 rounded-full">
+                                    {/* Charging connector icon */}
+                                    <div className="h-10 w-10 flex items-center justify-center">
+                                        <div className="border-2 border-[#FFA500] rounded-full h-8 w-8 flex items-center justify-center">
+                                            <div className="bg-[#FFA500] h-3 w-3 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-[#FFA500] font-semibold">Type 2 (Socket Only)</p>
+                                    <p className="font-semibold">22 kW</p>
+                                    <p>AC (Three-Phase)</p>
+                                    <p>32A 400V</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex items-center">
+                                <span className="text-[#FFA500] font-bold text-xl">1 ×</span>
+                                <span className="ml-2 text-sm bg-green-800 px-2 py-0.5 rounded">Operational</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Calendar column*/}
+                    <div className="flex flex-col space-y-4 items-center justify-center text-center w-full">
+                        <h1 className="text-2xl font-bold text-center ">Select a Date & Time</h1>
+                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-6 items-center justify-center w-fit h-fit">
+                            <Calendar 
+                                className="rounded-md text-lg" 
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                classNames={{
+                                    day_today: "bg-[#FFA500] text-white",
+                                    day_selected: "bg-[#14213d] text-white font-bold",
+                                    head_cell: "text-[#14213d] font-bold text-center mx-2",
+                                    cell: "h-10 w-10 text-center p-0 focus-within:relative font-normal",
+                                    day: "h-10 w-10 p-0 hover:bg-gray-100 aria-selected:opacity-100",
+                                    table: "w-full border-collapse",
+                                    nav_button: "h-8 w-8 bg-transparent p-0 hover:bg-gray-100 text-[#14213d]",
+                                    nav_button_previous: "absolute left-1",
+                                    nav_button_next: "absolute right-1"
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Time Selection */}
+                    <div className="space-y-6">
+                        <div>
+                            <h2 className="text-2xl font-bold text-[#FFA500]">Monday, May 22 2025</h2>
+
+                            <div className="mt-6 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="h-6 w-6" />
+                                    <div className="bg-white border-2 border-[#FFA500] p-3 rounded text-[#14213d] font-bold">
+                                        {selectedTimeSlot}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <RotateCw className="h-6 w-6" />
+                                    <div className="bg-white p-3 rounded text-[#14213d] font-bold">Does not repeat</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    )
+}
