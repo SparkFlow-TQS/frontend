@@ -4,14 +4,17 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { MapPin, Clock, RotateCw, Globe } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
-
+import Navbar from "@/components/navbar"
 export default function SchedulePage() {
     const [date, setDate] = useState<Date | undefined>(new Date())
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:15am-10h45am")
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#14213d]">
-            <main className="flex-1 p-4 md:p-6">
+        <div className="flex h-screen flex-col w-screen overflow-hidden">
+            <header>
+                <Navbar />
+            </header>
+            <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto text-white">
                     {/* Station Info */}
                     <div className="space-y-6">
@@ -60,8 +63,8 @@ export default function SchedulePage() {
                     <div className="flex flex-col space-y-4 items-center justify-center text-center w-full">
                         <h1 className="text-2xl font-bold text-center ">Select a Date & Time</h1>
                         <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-6 items-center justify-center w-fit h-fit">
-                            <Calendar 
-                                className="rounded-md text-lg" 
+                            <Calendar
+                                className="rounded-md text-lg"
                                 mode="single"
                                 selected={date}
                                 onSelect={setDate}

@@ -5,13 +5,17 @@ import { Input } from "@/components/ui/input"
 import { MapPin, Search, MinusIcon, PlusIcon} from "lucide-react"
 import { MapFeatures } from "@/components/mapfeats"
 import ChargingMap from "@/components/ChargingMap"
+import Navbar from "@/components/navbar"
 
 export default function MapPage() {
   const [mapZoom, setMapZoom] = useState(14)
   const [center, setCenter] = useState<[number, number]>([40.623361, -8.650256])
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden">
+    <div className="flex h-screen flex-col w-screen overflow-hidden">
+      <header>
+        <Navbar />
+      </header>
       {/* Main content area with map and controls */}
       <div className="relative flex-1">
         {/* Map starts below navbar */}

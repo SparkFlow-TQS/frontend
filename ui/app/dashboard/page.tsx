@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { UserCircle, Zap, DollarSign, Clock, Leaf, CreditCard, Calendar, History } from "lucide-react"
 import Link from "next/link"
-
+import Navbar from "@/components/navbar"
 
 export default function DashboardPage() {
 
@@ -48,8 +48,11 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="h-screen bg-[#14213d] overflow-hidden">
-      <main className="p-8 h-full flex flex-row items-center">
+    <div className="flex h-screen flex-col w-screen overflow-hidden">
+      <header>
+        <Navbar />
+      </header>
+      <main className="p-8 h-full flex flex-row items-center bg-[#14213d] text-[#FCA311]">
         {/* Sidebar Navigation */}
         <div className="align-middle p-10 justify-center flex flex-col items-center w-1/4 text-center">
             {sidebar_items.map((items, index) => (
