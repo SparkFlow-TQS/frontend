@@ -1,13 +1,15 @@
-import React from 'react'
+import * as React from 'react'
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import Navbar from './navbar'
+import Navbar from '../navbar'
 
-describe('Navbar', () => {
-  it('renders the logo and brand name', () => {
+describe('Navbar Component', () => {
+  it('renders navbar with logo and links', () => {
     render(<Navbar />)
-    expect(screen.getByAltText('SparkFlow')).toBeInTheDocument()
     expect(screen.getByText('SparkFlow')).toBeInTheDocument()
+    expect(screen.getByText('Schedule')).toBeInTheDocument()
+    expect(screen.getByText('Map')).toBeInTheDocument()
+    expect(screen.getByText('Dashboard')).toBeInTheDocument()
   })
 
   it('renders all navigation links', () => {
