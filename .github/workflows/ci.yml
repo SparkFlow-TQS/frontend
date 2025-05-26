@@ -28,7 +28,7 @@ jobs:
     - name: Type check
       run: |
         cd ui
-        npm run type-check || npm run tsc
+        npx tsc --noEmit
     
     - name: Lint
       run: |
