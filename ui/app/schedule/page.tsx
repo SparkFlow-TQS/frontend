@@ -72,7 +72,6 @@ export default function SchedulePage() {
                                 className="rounded-md text-lg"
                                 selected={date}
                                 onSelect={handleDateSelect}
-                                inline
                             />
                         </div>
                     </div>

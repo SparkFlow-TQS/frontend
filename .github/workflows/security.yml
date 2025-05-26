@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ui
-          npm ci --legacy-peer-deps
+          npm ci
       
       - name: Run npm audit
         run: |

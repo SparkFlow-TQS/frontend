@@ -1,31 +1,37 @@
 "use client"
 
 import * as React from "react"
-import DatePicker from "react-datepicker"
-import "react-datepicker/dist/react-datepicker.css"
 import { cn } from "@/lib/utils"
 
 function Calendar({
   className,
   selected,
   onSelect,
-  inline,
   ...props
 }: {
   className?: string
   selected?: Date
-  onSelect?: (date: Date | null, event?: React.SyntheticEvent<any, Event>) => void
-  inline?: boolean
+  onSelect?: (date: Date | null) => void
 }) {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = e.target.value ? new Date(e.target.value) : null
+    onSelect?.(date)
+  }
+
   return (
-    <DatePicker
-      selected={selected}
-      onChange={(date, event) => onSelect?.(date, event)}
-      inline={inline}
-      className={cn("", className)}
-      calendarClassName="bg-white rounded-lg shadow-lg p-4"
-      {...props}
-    />
+    <div className={cn("relative", className)}>
+      <input
+        type="date"
+        value={selected?.toISOString().split('T')[0] || ''}
+        onChange={handleDateChange}
+        className={cn(
+          "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50"
+        )}
+        {...props}
+      />
+    </div>
   )
 }
 
