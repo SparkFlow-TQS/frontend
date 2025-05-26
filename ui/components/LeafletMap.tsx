@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { Button } from './ui/button'
 import { MapPin } from 'lucide-react'
@@ -28,7 +28,7 @@ interface LeafletMapProps {
 export default function LeafletMap({ center, zoom, stations, onNavigate }: LeafletMapProps) {
   // Fix Leaflet icon issues
   useEffect(() => {
-    // @ts-ignore - Leaflet doesn't properly handle SSR
+    // @ts-expect-error - Leaflet icon issue
     delete L.Icon.Default.prototype._getIconUrl
     
     L.Icon.Default.mergeOptions({
