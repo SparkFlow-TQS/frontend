@@ -7,6 +7,13 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    deps: {
+      optimizer: {
+        web: {
+          include: ['react-icons']
+        }
+      }
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -20,4 +27,7 @@ export default defineConfig({
       ],
     },
   },
+  esbuild: {
+    target: 'esnext'
+  }
 }) 

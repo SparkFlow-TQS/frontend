@@ -19,7 +19,18 @@ vi.mock('next/router', () => ({
 // Mock next/image
 vi.mock('next/image', () => ({
   default: (props: any) => {
-    // eslint-disable-next-line jsx-a11y/alt-text
     return React.createElement('img', props)
+  },
+}))
+
+// Mock react-icons
+vi.mock('react-icons/io', () => ({
+  IoMdExit: () => React.createElement('span', { 'data-testid': 'exit-icon' }, 'Exit Icon')
+}))
+
+// Mock next/link
+vi.mock('next/link', () => ({
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => {
+    return React.createElement('a', { href }, children)
   },
 })) 

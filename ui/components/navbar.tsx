@@ -1,3 +1,4 @@
+import React from 'react'
 import Link from "next/link";
 import { IoMdExit } from "react-icons/io";
 import Image from "next/image";
