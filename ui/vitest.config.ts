@@ -16,7 +16,7 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
         'test/',
@@ -25,6 +25,7 @@ export default defineConfig({
         '**/*.config.ts',
         '**/types.ts',
       ],
+      reportsDirectory: './coverage'
     },
   },
   esbuild: {
