@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd ui
-        npm ci
+        npm ci --legacy-peer-deps
     
     - name: Type check
       run: |
