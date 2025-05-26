@@ -10,6 +10,9 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,18 +25,18 @@ jobs:
           
       - name: Install dependencies
         run: |
-          cd frontend/ui
+          cd ui
           npm install
           
       - name: Run tests with coverage
         run: |
-          cd frontend/ui
+          cd ui
           npm run test:coverage
           
       - name: Verify coverage report
         run: |
-          ls -la frontend/ui/coverage/
-          cat frontend/ui/coverage/lcov.info
+          ls -la ui/coverage/
+          cat ui/coverage/lcov.info
           
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
