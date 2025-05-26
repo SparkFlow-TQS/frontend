@@ -21,7 +21,6 @@ export default function MapPage() {
         {/* Map starts below navbar */}
         <div className="absolute inset-0 z-0">
           <ChargingMap 
-            height="100%" 
             zoom={mapZoom}
             center={center}
           />
