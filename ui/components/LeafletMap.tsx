@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { Button } from './ui/button'
-import { MapPin } from 'lucide-react'
+import { FaMapMarkerAlt } from 'react-icons/fa'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -83,7 +83,7 @@ export default function LeafletMap({ center, zoom, stations, onNavigate }: Leafl
                 className="mt-2 w-full flex items-center gap-1"
                 onClick={() => onNavigate(station.coordinates[0], station.coordinates[1])}
               >
-                <MapPin className="h-3 w-3" />
+                <FaMapMarkerAlt className="h-3 w-3" />
                 <span>Navigate</span>
               </Button>
             </div>
