@@ -2,12 +2,17 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { MapPin, Clock, RotateCw, Globe } from "lucide-react"
+import { MapPin, Clock, RotateCw } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import Navbar from "@/components/navbar"
+
 export default function SchedulePage() {
     const [date, setDate] = useState<Date | undefined>(new Date())
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:15am-10h45am")
+    const selectedTimeSlot = "10:15am-10h45am"
+
+    const handleDateSelect = (newDate: Date | null) => {
+        setDate(newDate || undefined)
+    }
 
     return (
         <div className="flex h-screen flex-col w-screen overflow-hidden">
@@ -65,20 +70,8 @@ export default function SchedulePage() {
                         <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-6 items-center justify-center w-fit h-fit">
                             <Calendar
                                 className="rounded-md text-lg"
-                                mode="single"
                                 selected={date}
-                                onSelect={setDate}
-                                classNames={{
-                                    day_today: "bg-[#FFA500] text-white",
-                                    day_selected: "bg-[#14213d] text-white font-bold",
-                                    head_cell: "text-[#14213d] font-bold text-center mx-2",
-                                    cell: "h-10 w-10 text-center p-0 focus-within:relative font-normal",
-                                    day: "h-10 w-10 p-0 hover:bg-gray-100 aria-selected:opacity-100",
-                                    table: "w-full border-collapse",
-                                    nav_button: "h-8 w-8 bg-transparent p-0 hover:bg-gray-100 text-[#14213d]",
-                                    nav_button_previous: "absolute left-1",
-                                    nav_button_next: "absolute right-1"
-                                }}
+                                onSelect={handleDateSelect}
                             />
                         </div>
                     </div>
