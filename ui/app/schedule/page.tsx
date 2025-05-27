@@ -10,8 +10,8 @@ export default function SchedulePage() {
     const [date, setDate] = useState<Date | undefined>(new Date())
     const selectedTimeSlot = "10:15am-10h45am"
 
-    const handleDateSelect = (newDate: Date | null) => {
-        setDate(newDate || undefined)
+    const handleDateSelect = (newDate: Date | undefined) => {
+        setDate(newDate)
     }
 
     return (
@@ -67,7 +67,7 @@ export default function SchedulePage() {
                     {/* Calendar column*/}
                     <div className="flex flex-col space-y-4 items-center justify-center text-center w-full">
                         <h1 className="text-2xl font-bold text-center ">Select a Date & Time</h1>
-                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-6 items-center justify-center w-fit h-fit">
+                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg items-center justify-center w-fit h-fit">
                             <Calendar
                                 className="rounded-md text-lg"
                                 selected={date}

@@ -1,35 +1,30 @@
 "use client"
 
 import * as React from "react"
+import { DayPicker } from "react-day-picker"
+import "react-day-picker/dist/style.css"
 import { cn } from "@/lib/utils"
 
-function Calendar({
-  className,
-  selected,
-  onSelect,
-  ...props
-}: {
+type CalendarProps = {
   className?: string
   selected?: Date
-  onSelect?: (date: Date | null) => void
-}) {
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value ? new Date(e.target.value) : null
-    onSelect?.(date)
-  }
+  onSelect?: (date: Date | undefined) => void
+}
 
+function Calendar({ className, selected, onSelect }: CalendarProps) {
   return (
     <div className={cn("relative", className)}>
-      <input
-        type="date"
-        value={selected?.toISOString().split('T')[0] || ''}
-        onChange={handleDateChange}
-        className={cn(
-          "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          "disabled:cursor-not-allowed disabled:opacity-50"
-        )}
-        {...props}
+      <DayPicker
+        mode="single"
+        selected={selected}
+        onSelect={onSelect}
+        showOutsideDays
+        weekStartsOn={0}
+        modifiersClassNames={{
+          selected: "bg-blue-600 text-white rounded-full",
+          today: "border border-blue-600",
+        }}
+        className="rounded-lg shadow px-4 py-2"
       />
     </div>
   )
