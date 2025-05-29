@@ -6,10 +6,41 @@ import { FaMapMarkerAlt, FaSearch, FaPlus } from "react-icons/fa"
 import { MapFeatures } from "@/components/mapfeats"
 import ChargingMap from "@/components/ChargingMap"
 import Navbar from "@/components/navbar"
+import { type ChargingStation } from '@/components/LeafletMap'
 
 export default function MapPage() {
   const [mapZoom] = useState(14)
   const [center] = useState<[number, number]>([40.623361, -8.650256])
+
+  const mockStations: ChargingStation[] = [
+    {
+      id: "AVR-00023/24",
+      name: "Mercadona",
+      location: "Aveiro",
+      coordinates: [40.623361, -8.650256],
+      kw: 22,
+      connectorType: "Type 2",
+      isOperational: true
+    },
+    {
+      id: "AVR-00025/26",
+      name: "Shopping Center",
+      location: "Aveiro",
+      coordinates: [40.635, -8.645],
+      kw: 50,
+      connectorType: "CCS",
+      isOperational: true
+    },
+    {
+      id: "AVR-00027/28",
+      name: "City Center",
+      location: "Aveiro",
+      coordinates: [40.640, -8.653],
+      kw: 11,
+      connectorType: "Type 2",
+      isOperational: false
+    }
+  ]
 
   return (
     <div className="flex h-screen flex-col w-screen overflow-hidden">
@@ -23,6 +54,7 @@ export default function MapPage() {
           <ChargingMap 
             zoom={mapZoom}
             center={center}
+            stations={mockStations}
           />
         </div>
 

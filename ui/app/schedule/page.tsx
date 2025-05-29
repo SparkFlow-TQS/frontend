@@ -2,17 +2,12 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { FaMapMarkerAlt, FaClock, FaRedo } from "react-icons/fa"
+import { FaMapPin, FaClock, FaRedo } from "react-icons/fa"
 import { Calendar } from "@/components/ui/calendar"
 import Navbar from "@/components/navbar"
-
 export default function SchedulePage() {
     const [date, setDate] = useState<Date | undefined>(new Date())
-    const selectedTimeSlot = "10:15am-10h45am"
-
-    const handleDateSelect = (newDate: Date | undefined) => {
-        setDate(newDate)
-    }
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:15am-10h45am")
 
     return (
         <div className="flex h-screen flex-col w-screen overflow-hidden">
@@ -30,7 +25,7 @@ export default function SchedulePage() {
                             <p className="text-sm mt-1">Lat/Long: 40.623361, -8.650256</p>
 
                             <Button variant="outline" className="mt-4 flex items-center gap-2">
-                                <FaMapMarkerAlt className="h-5 w-5" />
+                                <FaMapPin className="h-5 w-5" />
                                 NAVIGATE
                             </Button>
                         </div>
@@ -67,11 +62,20 @@ export default function SchedulePage() {
                     {/* Calendar column*/}
                     <div className="flex flex-col space-y-4 items-center justify-center text-center w-full">
                         <h1 className="text-2xl font-bold text-center ">Select a Date & Time</h1>
-                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg items-center justify-center w-fit h-fit">
+                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-2 items-center justify-center w-fit ">
                             <Calendar
                                 className="rounded-md text-lg"
+                                mode="single"
                                 selected={date}
-                                onSelect={handleDateSelect}
+                                onSelect={setDate}
+                                classNames={{
+                                    today: "bg-[#FFA500] text-white",
+                                    selected: "bg-[#14213d] text-white font-bold",
+                                    weekday: "text-[#14213d] font-bold text-center mx-2",
+                                    day: "h-10 w-10 p-0 hover:bg-gray-100 cursor-pointer",
+                                    month_grid: "w-full border-collapse",
+                                    nav_button: "h-8 w-8 bg-transparent p-0 hover:bg-gray-100 text-[#14213d]",
+                                }}
                             />
                         </div>
                     </div>
