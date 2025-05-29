@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Cache npm dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    
+    - name: Install dependencies
+      run: |
+        cd ui
+        npm ci
+    
+    - name: Type check
+      run: |
+        cd ui
+        npx tsc --noEmit
+    
+    - name: Lint
+      run: |
+        cd ui
+        npm run lint
+    
+    - name: Build
+      run: |
+        cd ui
+        npm run build 

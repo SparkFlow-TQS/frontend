@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/navbar";
+import Image from 'next/image'
+
 export default function Home() {
 
 
@@ -21,7 +23,13 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex flex-col items-center justify-center">
-              <img src="/logo.png" alt="Logo" className="w-3xl h-auto max-w-xs md:max-w-md mr-12" />
+              <Image 
+                src="/logo.png" 
+                alt="Logo"
+                width={500}
+                height={300}
+                className="w-3xl h-auto max-w-xs md:max-w-md mr-12"
+              />
             </div>
           </div>
           <p className="text-white p-12 text-lg max-w-xl">
@@ -30,7 +38,13 @@ export default function Home() {
           </p>
         </div>
         <div className="mt-8">
-          <img src="/charger.png" alt="Charging Cable" className="w-48 h-auto" />
+          <Image 
+            src="/charger.png" 
+            alt="Charging Cable"
+            width={500}
+            height={300}
+            className="w-48 h-auto"
+          />
         </div>
         <div className="w-full max-w-md">
           <Card className="bg-[#FFA500]">

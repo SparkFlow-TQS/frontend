@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { Button } from './ui/button'
-import { MapPin } from 'lucide-react'
-import L from 'leaflet'
+import { FaMapMarkerAlt } from 'react-icons/fa'
+import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 // Define charging station type to match backend Station model
@@ -33,7 +33,7 @@ interface LeafletMapProps {
 export default function LeafletMap({ center, zoom, stations, onNavigate }: LeafletMapProps) {
   // Fix Leaflet icon issues
   useEffect(() => {
-    // @ts-ignore - Leaflet doesn't properly handle SSR
+    // @ts-expect-error - Leaflet icon issue
     delete L.Icon.Default.prototype._getIconUrl
     
     L.Icon.Default.mergeOptions({
@@ -89,7 +89,7 @@ export default function LeafletMap({ center, zoom, stations, onNavigate }: Leafl
                 className="mt-2 w-full flex items-center gap-1"
                 onClick={() => onNavigate(station.latitude, station.longitude)}
               >
-                <MapPin className="h-3 w-3" />
+                <FaMapMarkerAlt className="h-3 w-3" />
                 <span>Navigate</span>
               </Button>
             </div>
