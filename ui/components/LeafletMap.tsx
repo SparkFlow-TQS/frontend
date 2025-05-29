@@ -7,14 +7,19 @@ import { MapPin } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Define charging station type
+// Define charging station type to match backend Station model
 export type ChargingStation = {
-  id: string
+  id: number
+  externalId?: string
   name: string
-  location: string
-  coordinates: [number, number]
-  kw: number
+  address: string
+  city: string
+  country?: string
+  latitude: number
+  longitude: number
+  status?: string
   connectorType: string
+  power?: number
   isOperational: boolean
 }
 
@@ -64,14 +69,15 @@ export default function LeafletMap({ center, zoom, stations, onNavigate }: Leafl
       {stations.map((station) => (
         <Marker 
           key={station.id}
-          position={station.coordinates}
+          position={[station.latitude, station.longitude]}
           icon={getMarkerIcon(station.isOperational)}
         >
           <Popup>
             <div className="p-1">
               <h3 className="font-bold text-lg">{station.name}</h3>
-              <p className="text-sm">{station.id} - {station.location}</p>
-              <p className="text-sm mt-1">{station.kw} kW • {station.connectorType}</p>
+              <p className="text-sm">{station.externalId || station.id} - {station.city}</p>
+              <p className="text-sm">{station.address}</p>
+              <p className="text-sm mt-1">{station.power || 'N/A'} kW • {station.connectorType}</p>
               <p className="text-sm font-medium mt-1">
                 <span className={`px-2 py-0.5 rounded ${station.isOperational ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {station.isOperational ? 'Operational' : 'Out of Service'}
@@ -81,7 +87,7 @@ export default function LeafletMap({ center, zoom, stations, onNavigate }: Leafl
                 variant="outline" 
                 size="sm"
                 className="mt-2 w-full flex items-center gap-1"
-                onClick={() => onNavigate(station.coordinates[0], station.coordinates[1])}
+                onClick={() => onNavigate(station.latitude, station.longitude)}
               >
                 <MapPin className="h-3 w-3" />
                 <span>Navigate</span>

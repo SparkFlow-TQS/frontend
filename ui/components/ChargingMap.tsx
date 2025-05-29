@@ -8,37 +8,6 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
   ssr: false,
   loading: () => <div className="h-full w-full bg-gray-200 rounded-lg animate-pulse"></div>
 })
-
-const mockStations: ChargingStation[] = [
-  {
-    id: "AVR-00023/24",
-    name: "Mercadona",
-    location: "Aveiro",
-    coordinates: [40.623361, -8.650256],
-    kw: 22,
-    connectorType: "Type 2",
-    isOperational: true
-  },
-  {
-    id: "AVR-00025/26",
-    name: "Shopping Center",
-    location: "Aveiro",
-    coordinates: [40.635, -8.645],
-    kw: 50,
-    connectorType: "CCS",
-    isOperational: true
-  },
-  {
-    id: "AVR-00027/28",
-    name: "City Center",
-    location: "Aveiro",
-    coordinates: [40.640, -8.653],
-    kw: 11,
-    connectorType: "Type 2",
-    isOperational: false
-  }
-]
-
 interface ChargingMapProps {
   height?: string
   zoom?: number
@@ -53,7 +22,7 @@ export default function ChargingMap({
   stations = [] 
 }: ChargingMapProps) {
   const displayStations = useMemo(() => {
-    return stations.length > 0 ? stations : mockStations
+    return stations.length > 0 ? stations : []
   }, [stations])
   
   const handleNavigate = (lat: number, lng: number) => {

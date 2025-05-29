@@ -62,22 +62,19 @@ export default function SchedulePage() {
                     {/* Calendar column*/}
                     <div className="flex flex-col space-y-4 items-center justify-center text-center w-full">
                         <h1 className="text-2xl font-bold text-center ">Select a Date & Time</h1>
-                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-6 items-center justify-center w-fit h-fit">
+                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-2 items-center justify-center w-fit ">
                             <Calendar
                                 className="rounded-md text-lg"
                                 mode="single"
                                 selected={date}
                                 onSelect={setDate}
                                 classNames={{
-                                    day_today: "bg-[#FFA500] text-white",
-                                    day_selected: "bg-[#14213d] text-white font-bold",
-                                    head_cell: "text-[#14213d] font-bold text-center mx-2",
-                                    cell: "h-10 w-10 text-center p-0 focus-within:relative font-normal",
-                                    day: "h-10 w-10 p-0 hover:bg-gray-100 aria-selected:opacity-100",
-                                    table: "w-full border-collapse",
+                                    today: "bg-[#FFA500] text-white",
+                                    selected: "bg-[#14213d] text-white font-bold",
+                                    weekday: "text-[#14213d] font-bold text-center mx-2",
+                                    day: "h-10 w-10 p-0 hover:bg-gray-100 cursor-pointer",
+                                    month_grid: "w-full border-collapse",
                                     nav_button: "h-8 w-8 bg-transparent p-0 hover:bg-gray-100 text-[#14213d]",
-                                    nav_button_previous: "absolute left-1",
-                                    nav_button_next: "absolute right-1"
                                 }}
                             />
                         </div>
