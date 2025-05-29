@@ -11,7 +11,7 @@ import { type ChargingStation } from '@/components/LeafletMap'
 import { StationAPI } from '@/lib/api'
 
 export default function MapPage() {
-  const [mapZoom, setMapZoom] = useState(14)
+  const [mapZoom] = useState(14)
   const [center, setCenter] = useState<[number, number]>([40.623361, -8.650256])
   const [stations, setStations] = useState<ChargingStation[]>([])
   const [loading, setLoading] = useState(true)

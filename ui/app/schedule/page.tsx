@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar"
 import Navbar from "@/components/navbar"
 export default function SchedulePage() {
     const [date, setDate] = useState<Date | undefined>(new Date())
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:15am-10h45am")
+    const [selectedTimeSlot] = useState("10:15am-10h45am")
 
     return (
         <div className="flex h-screen flex-col w-screen overflow-hidden">
