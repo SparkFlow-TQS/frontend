@@ -11,47 +11,12 @@ import { type ChargingStation } from '@/components/LeafletMap'
 import { StationAPI } from '@/lib/api'
 
 export default function MapPage() {
-<<<<<<< HEAD
-  const [mapZoom] = useState(14)
-  const [center] = useState<[number, number]>([40.623361, -8.650256])
-
-  const mockStations: ChargingStation[] = [
-    {
-      id: "AVR-00023/24",
-      name: "Mercadona",
-      location: "Aveiro",
-      coordinates: [40.623361, -8.650256],
-      kw: 22,
-      connectorType: "Type 2",
-      isOperational: true
-    },
-    {
-      id: "AVR-00025/26",
-      name: "Shopping Center",
-      location: "Aveiro",
-      coordinates: [40.635, -8.645],
-      kw: 50,
-      connectorType: "CCS",
-      isOperational: true
-    },
-    {
-      id: "AVR-00027/28",
-      name: "City Center",
-      location: "Aveiro",
-      coordinates: [40.640, -8.653],
-      kw: 11,
-      connectorType: "Type 2",
-      isOperational: false
-    }
-  ]
-=======
   const [mapZoom, setMapZoom] = useState(14)
   const [center, setCenter] = useState<[number, number]>([40.623361, -8.650256])
   const [stations, setStations] = useState<ChargingStation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
->>>>>>> eafb87d (add of stations to map)
 
   // Fetch stations from the backend
   useEffect(() => {
