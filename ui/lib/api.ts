@@ -1,0 +1,94 @@
+import { ChargingStation } from '@/components/LeafletMap'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082'
+
+export class StationAPI {
+  private static baseURL = `${API_BASE_URL}/stations`
+
+  static async getAllStations(): Promise<ChargingStation[]> {
+    try {
+      const response = await fetch(this.baseURL)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stations: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching stations:', error)
+      throw error
+    }
+  }
+
+  static async getStationById(id: number): Promise<ChargingStation> {
+    try {
+      const response = await fetch(`${this.baseURL}/${id}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch station: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching station:', error)
+      throw error
+    }
+  }
+
+  static async createStation(station: Omit<ChargingStation, 'id'>): Promise<ChargingStation> {
+    try {
+      const response = await fetch(this.baseURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(station),
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to create station: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error creating station:', error)
+      throw error
+    }
+  }
+
+  static async getNearbyStations(
+    latitude: number, 
+    longitude: number, 
+    radius: number = 10
+  ): Promise<ChargingStation[]> {
+    try {
+      const response = await fetch(
+        `${this.baseURL}/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`
+      )
+      if (!response.ok) {
+        throw new Error(`Failed to fetch nearby stations: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching nearby stations:', error)
+      throw error
+    }
+  }
+
+  static async searchStations(filters: {
+    name?: string
+    city?: string
+    country?: string
+    connectorType?: string
+  }): Promise<ChargingStation[]> {
+    try {
+      const params = new URLSearchParams()
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value)
+      })
+      
+      const response = await fetch(`${this.baseURL}/search?${params}`)
+      if (!response.ok) {
+        throw new Error(`Failed to search stations: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error searching stations:', error)
+      throw error
+    }
+  }
+} 

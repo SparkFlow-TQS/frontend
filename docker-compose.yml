@@ -4,6 +4,10 @@ services:
     container_name: sparkflow-frontend
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8082
+    networks:
+      - sparkflow-network
     develop:
       watch:
         - action: sync
@@ -15,3 +19,7 @@ services:
             - .git/
         - action: rebuild
           path: ./ui/package.json
+
+networks:
+  sparkflow-network:
+    external: true
