@@ -57,8 +57,25 @@
 <!-- Link to SonarQube analysis results -->
 [SonarQube Report]()
 
+## UI/UX Changes
+<!-- If this PR changes the UI -->
+- [ ] UI changes included
+
+## Backend Integration
+<!-- If this PR affects API calls or contracts, describe the changes and any coordination needed with backend -->
+- [ ] API contract changes
+
+## Accessibility
+<!-- If this PR changes the UI, describe any accessibility considerations or testing -->
+- [ ] Accessibility reviewed
+- [ ] Keyboard navigation tested
+
+## Deployment Notes
+<!-- Any special deployment steps or environment changes required? -->
+- [ ] No special deployment steps
+
 ## Reviewers
-<!-- Tag two reviewers -->
+<!-- Tag at least two reviewers -->
 @reviewer1 @reviewer2
 
 ## Checklist
