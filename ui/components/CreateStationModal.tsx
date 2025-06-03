@@ -154,7 +154,10 @@ export default function CreateStationModal({
                 type="number"
                 step="any"
                 value={formData.latitude}
-                onChange={(e) => handleInputChange('latitude', parseFloat(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                  handleInputChange('latitude', isNaN(value) ? 0 : value)
+                }}
                 required
               />
             </div>
@@ -165,7 +168,10 @@ export default function CreateStationModal({
                 type="number"
                 step="any"
                 value={formData.longitude}
-                onChange={(e) => handleInputChange('longitude', parseFloat(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                  handleInputChange('longitude', isNaN(value) ? 0 : value)
+                }}
                 required
               />
             </div>
@@ -195,7 +201,10 @@ export default function CreateStationModal({
               id="power"
               type="number"
               value={formData.power}
-              onChange={(e) => handleInputChange('power', parseInt(e.target.value))}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 0 : parseInt(e.target.value)
+                handleInputChange('power', isNaN(value) ? 0 : value)
+              }}
               placeholder="e.g., 22"
             />
           </div>
