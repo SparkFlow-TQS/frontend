@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { MapPin, Clock, RotateCw, Globe } from "lucide-react"
+import { FaMapPin, FaClock, FaRedo } from "react-icons/fa"
 import { Calendar } from "@/components/ui/calendar"
 import Navbar from "@/components/navbar"
 export default function SchedulePage() {
     const [date, setDate] = useState<Date | undefined>(new Date())
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:15am-10h45am")
+    const [selectedTimeSlot] = useState("10:15am-10h45am")
 
     return (
         <div className="flex h-screen flex-col w-screen overflow-hidden">
@@ -25,7 +25,7 @@ export default function SchedulePage() {
                             <p className="text-sm mt-1">Lat/Long: 40.623361, -8.650256</p>
 
                             <Button variant="outline" className="mt-4 flex items-center gap-2">
-                                <MapPin className="h-5 w-5" />
+                                <FaMapPin className="h-5 w-5" />
                                 NAVIGATE
                             </Button>
                         </div>
@@ -87,14 +87,14 @@ export default function SchedulePage() {
 
                             <div className="mt-6 space-y-4">
                                 <div className="flex items-center gap-2">
-                                    <Clock className="h-6 w-6" />
+                                    <FaClock className="h-6 w-6" />
                                     <div className="bg-white border-2 border-[#FFA500] p-3 rounded text-[#14213d] font-bold">
                                         {selectedTimeSlot}
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <RotateCw className="h-6 w-6" />
+                                    <FaRedo className="h-6 w-6" />
                                     <div className="bg-white p-3 rounded text-[#14213d] font-bold">Does not repeat</div>
                                 </div>
                             </div>

@@ -1,9 +1,9 @@
 import { ChargingStation } from '@/components/LeafletMap'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 export class StationAPI {
-  private static baseURL = `${API_BASE_URL}/api/v1/stations`
+  private static baseURL = `${API_BASE_URL}/station/api/v1/stations`
 
   static async getAllStations(): Promise<ChargingStation[]> {
     try {

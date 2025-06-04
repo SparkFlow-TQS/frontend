@@ -9,14 +9,12 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
   loading: () => <div className="h-full w-full bg-gray-200 rounded-lg animate-pulse"></div>
 })
 interface ChargingMapProps {
-  height?: string
-  zoom?: number
-  center?: [number, number]
+  zoom: number;
+  center: [number, number];
   stations?: ChargingStation[]
 }
 
 export default function ChargingMap({ 
-  height = '600px', 
   zoom = 14, 
   center = [40.623361, -8.650256], 
   stations = [] 

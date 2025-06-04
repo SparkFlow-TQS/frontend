@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UserCircle, Zap, DollarSign, Clock, Leaf, CreditCard, Calendar, History } from "lucide-react"
+import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory } from "react-icons/fa"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 
@@ -10,39 +10,39 @@ export default function DashboardPage() {
     {
       title: "This month&apos;s costs",
       value: "$58.00",
-      icon: <DollarSign className="h-5 w-5 text-white" />
+      icon: <FaDollarSign className="h-5 w-5 text-white" />
     },
     {
       title: "This month&apos;s kWh",
       value: "40 kWh",
-      icon: <Zap className="h-5 w-5 text-white" />
+      icon: <FaBolt className="h-5 w-5 text-white" />
     },
     {
       title: "This month&apos;s charges",
       value: "4 times",
-      icon: <Clock className="h-5 w-5 text-white" />
+      icon: <FaClock className="h-5 w-5 text-white" />
     },
     {
       title: "CO2 Saved",
       value: "20 L",
-      icon: <Leaf className="h-5 w-5 text-white" />
+      icon: <FaLeaf className="h-5 w-5 text-white" />
     }
   ]
 
   const sidebar_items = [
     {
       title: "My Bookings",
-      icon: <Calendar className="h-5 w-5 text-white" />,
+      icon: <FaCalendar className="h-5 w-5 text-white" />,
       href: "/bookings"
     },
     {
       title: "History",
-      icon: <History className="h-5 w-5 text-white" />,
+      icon: <FaHistory className="h-5 w-5 text-white" />,
       href: "/history"
     },
     {
       title: "Payments",
-      icon: <CreditCard className="h-5 w-5 text-white" />,
+      icon: <FaCreditCard className="h-5 w-5 text-white" />,
       href: "/payments"
     }
   ]
@@ -99,7 +99,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex flex-col items-center mt-4 md:mt-0">
                   <h3 className="text-xl font-semibold text-[#14213d]">Type of User</h3>
-                  <UserCircle className="h-20 w-20 text-white mt-2" />
+                  <FaUserCircle className="h-20 w-20 text-white mt-2" />
                   <p className="text-xl font-semibold text-[#14213d] mt-2">Driver</p>
                 </div>
               </CardContent>
