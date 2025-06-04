@@ -1,17 +1,20 @@
 import { ChargingStation } from '@/components/LeafletMap'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost'
 
 export class StationAPI {
-  private static baseURL = `${API_BASE_URL}/stations`
+  private static baseURL = `${API_BASE_URL}/api/v1/stations`
 
   static async getAllStations(): Promise<ChargingStation[]> {
     try {
       const response = await fetch(this.baseURL)
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch stations: ${response.status}`)
       }
-      return await response.json()
+      
+      const data = await response.json()
+      return data
     } catch (error) {
       console.error('Error fetching stations:', error)
       throw error
@@ -56,13 +59,16 @@ export class StationAPI {
     radius: number = 10
   ): Promise<ChargingStation[]> {
     try {
-      const response = await fetch(
-        `${this.baseURL}/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`
-      )
+      const url = `${this.baseURL}/nearby?latitude=${latitude}&longitude=${longitude}&radius=${radius}`
+      
+      const response = await fetch(url)
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch nearby stations: ${response.status}`)
       }
-      return await response.json()
+      
+      const data = await response.json()
+      return data
     } catch (error) {
       console.error('Error fetching nearby stations:', error)
       throw error
