@@ -17,6 +17,26 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          const userCoords: [number, number] = [latitude, longitude]
+          console.log('User location obtained:', userCoords)
+          setUserLocation(userCoords)
+          setCenter(userCoords) // Center map on user's location
+        },
+        (error) => {
+          console.error('Error getting user location:', error)
+          // Keep default location if geolocation fails
+        }
+      )
+    }
+  }, [])
 
   // Fetch stations from the backend
   useEffect(() => {
@@ -24,7 +44,10 @@ export default function MapPage() {
       try {
         setLoading(true)
         setError(null)
-        const stationsData = await StationAPI.getAllStations()
+        
+        // Use user location if available, otherwise use default
+        const [lat, lng] = userLocation || center
+        const stationsData = await StationAPI.getNearbyStations(lat, lng, 100) // 100km radius
         setStations(stationsData)
       } catch (err) {
         console.error('Failed to fetch stations:', err)
@@ -50,8 +73,11 @@ export default function MapPage() {
       }
     }
 
-    fetchStations()
-  }, [])
+    // Only fetch stations when we have a location (either user's or default)
+    if (userLocation || center) {
+      fetchStations()
+    }
+  }, [userLocation, center]) // Re-fetch when location changes
 
   const handleStationCreated = (newStation: ChargingStation) => {
     setStations(prev => [...prev, newStation])

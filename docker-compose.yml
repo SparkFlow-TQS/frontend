@@ -5,7 +5,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8082
+      - NEXT_PUBLIC_API_URL=
     develop:
       watch:
         - action: sync
@@ -17,4 +17,9 @@ services:
             - .git/
         - action: rebuild
           path: ./ui/package.json
+
+networks:
+  sparkflow-network:
+    external: true
+
 
