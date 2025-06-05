@@ -4,12 +4,9 @@ import {
   StationAvailability, 
   TimeSlot, 
   ReservationConflict,
-  BookingStatus,
   ReservationDisplayStatus,
   backendToDisplayStatus,
-  displayToBackendStatus,
-  formatRecurringDays,
-  getDayOfWeek
+  displayToBackendStatus
 } from '@/types'
 import { DEFAULT_CHARGERS_PER_STATION } from '@/types/station'
 
@@ -27,7 +24,20 @@ export class ReservationManager {
       
       const reservations = JSON.parse(stored)
       // Convert date strings back to Date objects and handle legacy data
-      return reservations.map((r: any) => ({
+      return reservations.map((r: {
+        id: string
+        stationId: string | number
+        stationName: string
+        userId?: string | number
+        timeSlot: { start: string; end: string }
+        chargerCount: number
+        status?: string
+        displayStatus?: string
+        recurringDays?: number[] | Set<number>
+        createdAt: string
+        updatedAt: string
+        estimatedCost?: number
+      }) => ({
         ...r,
         stationId: typeof r.stationId === 'string' ? parseInt(r.stationId) : r.stationId,
         userId: r.userId ? (typeof r.userId === 'string' ? parseInt(r.userId) : r.userId) : undefined,
