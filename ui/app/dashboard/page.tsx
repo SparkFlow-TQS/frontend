@@ -32,26 +32,6 @@ interface HoveredData {
   y?: number
 }
 
-interface MonthData {
-  month: string
-  fullMonth: string
-  cost: number
-  sessions: number
-  duration: number
-  kwh: number
-  height: number
-  reservations: Reservation[]
-}
-
-interface WeekData {
-  week: string
-  sessions: number
-  cost: number
-  height: number
-  dateRange: string
-  reservations: Reservation[]
-}
-
 export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
@@ -503,7 +483,7 @@ export default function DashboardPage() {
                       ))}
                       
                       {/* Trend Tooltip */}
-                      {hoveredData?.type === 'trend' && (
+                      {hoveredData?.type === 'trend' && hoveredData.x && hoveredData.y && hoveredData.data && (
                         <g>
                           <rect
                             x={hoveredData.x - 30}
@@ -521,7 +501,7 @@ export default function DashboardPage() {
                             fill="white"
                             fontSize="10"
                           >
-                            {hoveredData.data.month}
+                            {hoveredData.data.month || ''}
                           </text>
                           <text
                             x={hoveredData.x}
@@ -530,7 +510,7 @@ export default function DashboardPage() {
                             fill="white"
                             fontSize="8"
                           >
-                            €{hoveredData.data.cost.toFixed(0)}
+                            €{(hoveredData.data.cost || 0).toFixed(0)}
                           </text>
                         </g>
                       )}
