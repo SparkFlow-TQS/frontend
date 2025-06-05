@@ -272,7 +272,7 @@ export default function SchedulePage() {
                                                             {result.address}
                                                         </div>
                                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                                                            <span>{result.power || 'N/A'} kW • {result.connectorType}</span>
+                                                            <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
                                                             <span className={`px-1 py-0.5 rounded text-xs ${
                                                                 result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                             }`}>
@@ -314,7 +314,7 @@ export default function SchedulePage() {
                                                     <p className="text-sm opacity-90">{result.address}</p>
                                                     <p className="text-sm opacity-90">{result.city}, {result.country}</p>
                                                     <div className="flex items-center gap-4 mt-2 text-sm">
-                                                        <span>{result.power || 'N/A'} kW • {result.connectorType}</span>
+                                                        <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
                                                         <span className={`px-2 py-1 rounded text-xs ${
                                                             result.isOperational ? 'bg-green-600' : 'bg-red-600'
                                                         }`}>
@@ -402,7 +402,7 @@ export default function SchedulePage() {
                                 </div>
 
                                     <div className="text-left">
-                                        <p className="text-[#FFA500] font-semibold">{station.connectorType}</p>
+                                        <p className="text-[#FFA500] font-semibold">{station.chargerCount} {station.chargerCount === 1 ? 'charger' : 'chargers'}</p>
                                         <p className="font-semibold">{station.power || 'N/A'} kW</p>
                                     <p>AC (Three-Phase)</p>
                                     <p>32A 400V</p>
