@@ -18,8 +18,3 @@ services:
         - action: rebuild
           path: ./ui/package.json
 
-networks:
-  sparkflow-network:
-    external: true
-
-

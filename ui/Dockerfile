@@ -17,8 +17,10 @@ RUN npm install
 # Copy rest of app
 COPY . .
 
-# Set ownership to non-root user for runtime
-RUN chown -R nextjs:nodejs /app
+# Create all Next.js required directories with proper structure and permissions
+RUN mkdir -p .next/types .next/server .next/cache .next/static/development .next/static/production && \
+    chmod -R 755 .next && \
+    chown -R nextjs:nodejs .next
 
 # Switch to app user
 USER nextjs
