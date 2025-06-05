@@ -80,7 +80,7 @@ function SchedulePageContent() {
         const dayAvailability = ReservationManager.getStationAvailability(
             station.id,
             selectedDateObj,
-            station.chargerCount
+            station.quantityOfChargers
         )
         setAvailability(dayAvailability.timeSlots)
     }, [station, date, timeRange, chargerCount])
@@ -147,7 +147,7 @@ function SchedulePageContent() {
         setSearchQuery("")
         setShowAutocomplete(false)
         // Reset charger count to fit within station limits
-        setChargerCount(Math.min(chargerCount, selectedStation.chargerCount))
+        setChargerCount(Math.min(chargerCount, selectedStation.quantityOfChargers))
     }
 
     const handleAutocompleteSelect = (selectedStation: ChargingStation) => {
@@ -157,7 +157,7 @@ function SchedulePageContent() {
         setAutocompleteResults([])
         setSearchResults([])
         // Reset charger count to fit within station limits
-        setChargerCount(Math.min(chargerCount, selectedStation.chargerCount))
+        setChargerCount(Math.min(chargerCount, selectedStation.quantityOfChargers))
     }
 
     const handleNavigate = () => {
@@ -260,7 +260,7 @@ function SchedulePageContent() {
             const availabilityCheck = ReservationManager.checkAvailability(
                 station.id,
                 timeSlot,
-                station.chargerCount
+                station.quantityOfChargers
             )
 
             if (availabilityCheck.availableChargers < chargerCount) {
@@ -402,7 +402,7 @@ function SchedulePageContent() {
                                                             {result.address}
                                                         </div>
                                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                                                            <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
+                                                            <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                             <span className={`px-1 py-0.5 rounded text-xs ${
                                                                 result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                             }`}>
@@ -444,7 +444,7 @@ function SchedulePageContent() {
                                                     <p className="text-sm opacity-90">{result.address}</p>
                                                     <p className="text-sm opacity-90">{result.city}, {result.country}</p>
                                                     <div className="flex items-center gap-4 mt-2 text-sm">
-                                                        <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
+                                                        <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                         <span className={`px-2 py-1 rounded text-xs ${
                                                             result.isOperational ? 'bg-green-600' : 'bg-red-600'
                                                         }`}>
@@ -513,7 +513,7 @@ function SchedulePageContent() {
                                     <p className="text-lg mt-1">{station.city} • {station.address}</p>
                                     <div className="flex items-center gap-4 mt-2">
                                         <span className="text-sm">{station.power || 'N/A'} kW</span>
-                                        <span className="text-sm">{station.chargerCount} {station.chargerCount === 1 ? 'charger' : 'chargers'} available</span>
+                                        <span className="text-sm">{station.quantityOfChargers} {station.quantityOfChargers === 1 ? 'charger' : 'chargers'} available</span>
                                         <span className={`px-2 py-1 rounded text-xs ${
                                             station.isOperational ? 'bg-green-600' : 'bg-red-600'
                                         }`}>

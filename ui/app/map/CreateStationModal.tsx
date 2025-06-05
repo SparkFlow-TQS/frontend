@@ -24,9 +24,10 @@ export default function CreateStationModal({
     country: "Portugal",
     latitude: defaultLocation?.lat || 40.623361,
     longitude: defaultLocation?.lng || -8.650256,
-    chargerCount: 2,
+    quantityOfChargers: 2,
     power: 22,
-    isOperational: true
+    isOperational: true,
+    status: 'Available'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,9 +51,10 @@ export default function CreateStationModal({
         country: "Portugal",
         latitude: defaultLocation?.lat || 40.623361,
         longitude: defaultLocation?.lng || -8.650256,
-        chargerCount: 2,
+        quantityOfChargers: 2,
         power: 22,
-        isOperational: true
+        isOperational: true,
+        status: 'Available'
       })
     } catch (err) {
       console.error('Failed to create station:', err)
@@ -172,16 +174,16 @@ export default function CreateStationModal({
 
           {/* Charger Count */}
           <div className="space-y-2">
-            <Label htmlFor="chargerCount">Number of Chargers *</Label>
+            <Label htmlFor="quantityOfChargers">Number of Chargers *</Label>
             <Input
-              id="chargerCount"
+              id="quantityOfChargers"
               type="number"
               min="1"
               max="50"
-              value={formData.chargerCount}
+              value={formData.quantityOfChargers}
               onChange={(e) => {
-                const value = e.target.value === '' ? 1 : parseInt(e.target.value)
-                handleInputChange('chargerCount', isNaN(value) ? 1 : Math.max(1, Math.min(50, value)))
+                const value = parseInt(e.target.value) || 1
+                handleInputChange('quantityOfChargers', isNaN(value) ? 1 : Math.max(1, Math.min(50, value)))
               }}
               placeholder="e.g., 2"
               required

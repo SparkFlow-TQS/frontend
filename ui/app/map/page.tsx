@@ -207,8 +207,9 @@ export default function MapPage() {
             latitude: 40.623361,
             longitude: -8.650256,
             power: 22,
-            chargerCount: 2,
-            isOperational: true
+            quantityOfChargers: 2,
+            isOperational: true,
+            status: "Available"
           }
         ]
         setStations(fallbackStations)
@@ -493,7 +494,7 @@ export default function MapPage() {
                           {result.address}
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                          <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
+                          <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                           <span className={`px-1 py-0.5 rounded text-xs ${
                             result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>

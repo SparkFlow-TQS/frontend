@@ -228,23 +228,13 @@ export default function LeafletMap({
               <h3 className="font-bold text-lg">{station.name}</h3>
               <p className="text-sm">{station.externalId || station.id} - {station.city}</p>
               <p className="text-sm">{station.address}</p>
-              <p className="text-sm mt-1">{station.power || 'N/A'} kW • {station.chargerCount} {station.chargerCount === 1 ? 'charger' : 'chargers'}</p>
+              <p className="text-sm mt-1">{station.power || 'N/A'} kW • {station.quantityOfChargers} {station.quantityOfChargers === 1 ? 'charger' : 'chargers'}</p>
               <p className="text-sm font-medium mt-1">
                 <span className={`px-2 py-0.5 rounded ${station.isOperational ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {station.isOperational ? 'Operational' : 'Out of Service'}
                 </span>
               </p>
               <div className="mt-2 space-y-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="w-full flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
-                  onClick={() => handleReserveClick(station)}
-                  disabled={!station.isOperational}
-                >
-                  <FaBolt className="h-3 w-3" />
-                  <span>Reserve</span>
-                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
