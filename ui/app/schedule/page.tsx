@@ -4,17 +4,18 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FaMapPin, FaClock, FaRedo, FaSearch } from "react-icons/fa"
+import { FaMapPin, FaSearch, FaBolt, FaExclamationTriangle, FaCheck, FaSync } from "react-icons/fa"
 import { Calendar } from "@/components/ui/calendar"
 import Navbar from "@/components/navbar"
 import { type ChargingStation } from "@/types"
 import { StationAPI } from "@/lib/api"
+import { ReservationManager } from "@/lib/reservations"
 
 function SchedulePageContent() {
     const [date, setDate] = useState<Date | undefined>(new Date())
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("")
-    const [repeatOption, setRepeatOption] = useState("none")
     const [station, setStation] = useState<ChargingStation | null>(null)
     const [loading, setLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
@@ -27,19 +28,18 @@ function SchedulePageContent() {
     const searchInputRef = useRef<HTMLInputElement>(null)
     const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
-    // Time slot options
-    const timeSlots = [
-        "08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", "09:30 - 10:00",
-        "10:00 - 10:30", "10:30 - 11:00", "11:00 - 11:30", "11:30 - 12:00",
-        "12:00 - 12:30", "12:30 - 13:00", "13:00 - 13:30", "13:30 - 14:00",
-        "14:00 - 14:30", "14:30 - 15:00", "15:00 - 15:30", "15:30 - 16:00",
-        "16:00 - 16:30", "16:30 - 17:00", "17:00 - 17:30", "17:30 - 18:00",
-        "18:00 - 18:30", "18:30 - 19:00", "19:00 - 19:30", "19:30 - 20:00"
-    ]
+    // Reservation-specific state
+    const [timeRange, setTimeRange] = useState<number[]>([8 * 60, 10 * 60]) // [startMinutes, endMinutes] from midnight
+    const [chargerCount, setChargerCount] = useState<number>(1)
+    const [repeatOption, setRepeatOption] = useState<string>("none")
+    const [availability, setAvailability] = useState<{ time: string; availableChargers: number; totalChargers: number; isBlocked: boolean }[]>([])
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
     // Repeat options
     const repeatOptions = [
-        { value: "none", label: "Does not repeat" },
+        { value: "none", label: "No Repeat" },
         { value: "daily", label: "Daily" },
         { value: "weekly", label: "Weekly" },
         { value: "monthly", label: "Monthly" }
@@ -71,6 +71,19 @@ function SchedulePageContent() {
 
         loadStationData()
     }, [searchParams])
+
+    // Check availability when parameters change
+    useEffect(() => {
+        if (!station || !date) return
+
+        const selectedDateObj = new Date(date)
+        const dayAvailability = ReservationManager.getStationAvailability(
+            station.id,
+            selectedDateObj,
+            station.quantityOfChargers
+        )
+        setAvailability(dayAvailability.timeSlots)
+    }, [station, date, timeRange, chargerCount])
 
     // Debounced autocomplete search
     const debouncedAutocompleteSearch = useCallback(async (query: string) => {
@@ -133,6 +146,8 @@ function SchedulePageContent() {
         setSearchResults([])
         setSearchQuery("")
         setShowAutocomplete(false)
+        // Reset charger count to fit within station limits
+        setChargerCount(Math.min(chargerCount, selectedStation.quantityOfChargers))
     }
 
     const handleAutocompleteSelect = (selectedStation: ChargingStation) => {
@@ -141,6 +156,8 @@ function SchedulePageContent() {
         setShowAutocomplete(false)
         setAutocompleteResults([])
         setSearchResults([])
+        // Reset charger count to fit within station limits
+        setChargerCount(Math.min(chargerCount, selectedStation.quantityOfChargers))
     }
 
     const handleNavigate = () => {
@@ -189,6 +206,130 @@ function SchedulePageContent() {
         }, 200)
     }
 
+    // Create time slot from current parameters
+    const createTimeSlot = useCallback(() => {
+        if (!date) return null
+        
+        const selectedDate = new Date(date)
+        const start = new Date(selectedDate)
+        start.setHours(Math.floor(timeRange[0] / 60), timeRange[0] % 60, 0, 0)
+        const end = new Date(selectedDate)
+        end.setHours(Math.floor(timeRange[1] / 60), timeRange[1] % 60, 0, 0)
+        
+        return { start, end }
+    }, [date, timeRange])
+
+    // Check if current time slot is blocked
+    const isTimeSlotBlocked = (): boolean => {
+        const startHour = Math.floor(timeRange[0] / 60)
+        const endHour = Math.floor(timeRange[1] / 60)
+        
+        const availableInRange = availability.filter(slot => {
+            const hour = parseInt(slot.time.split(':')[0])
+            return hour >= startHour && hour <= endHour
+        })
+        
+        return availableInRange.some(slot => slot.availableChargers < chargerCount)
+    }
+
+    // Handle reservation submission
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!station || !date) return
+        
+        setIsSubmitting(true)
+        setError(null)
+        setSuccessMessage(null)
+
+        try {
+            const timeSlot = createTimeSlot()
+            if (!timeSlot) {
+                throw new Error('Please select a valid date')
+            }
+            
+            // Validate time slot
+            if (timeSlot.start >= timeSlot.end) {
+                throw new Error('End time must be after start time')
+            }
+
+            if (timeSlot.start <= new Date()) {
+                throw new Error('Reservation time must be in the future')
+            }
+
+            // Check availability
+            const availabilityCheck = ReservationManager.checkAvailability(
+                station.id,
+                timeSlot,
+                station.quantityOfChargers
+            )
+
+            if (availabilityCheck.availableChargers < chargerCount) {
+                throw new Error(`Only ${availabilityCheck.availableChargers} chargers available for this time slot`)
+            }
+
+            // Create reservation
+            const reservation = ReservationManager.createReservation(
+                {
+                    stationId: station.id,
+                    timeSlot,
+                    chargerCount
+                },
+                station.name
+            )
+
+            setSuccessMessage(`Reservation created successfully! Reservation ID: ${reservation.id}`)
+            
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create reservation')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    // Format time for display (minutes from midnight to HH:MM)
+    const formatTime = (minutes: number): string => {
+        const hours = Math.floor(minutes / 60)
+        const mins = minutes % 60
+        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+    }
+
+    // Parse time string (HH:MM) to minutes from midnight
+    const parseTime = (timeStr: string): number => {
+        const [hours, minutes] = timeStr.split(':').map(num => parseInt(num) || 0)
+        return hours * 60 + minutes
+    }
+
+    // Validate and update start time from input
+    const handleStartTimeChange = (value: string) => {
+        const minutes = parseTime(value)
+        if (minutes >= 6 * 60 && minutes <= 23 * 60 && minutes < timeRange[1]) {
+            setTimeRange([minutes, timeRange[1]])
+        }
+    }
+
+    // Validate and update end time from input
+    const handleEndTimeChange = (value: string) => {
+        const minutes = parseTime(value)
+        if (minutes >= 6 * 60 && minutes <= 23 * 60 && minutes > timeRange[0]) {
+            setTimeRange([timeRange[0], minutes])
+        }
+    }
+
+    // Calculate duration in hours and minutes
+    const getDuration = (): string => {
+        const totalMinutes = timeRange[1] - timeRange[0]
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+        
+        if (hours === 0) {
+            return `${minutes}min`
+        } else if (minutes === 0) {
+            return `${hours}h`
+        } else {
+            return `${hours}h ${minutes}min`
+        }
+    }
+
     // Cleanup timeout on unmount
     useEffect(() => {
         return () => {
@@ -197,17 +338,6 @@ function SchedulePageContent() {
             }
         }
     }, [])
-
-    // Format date for display
-    const formatDate = (date: Date | undefined) => {
-        if (!date) return "Select a date"
-        return date.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        })
-    }
 
     if (loading) {
         return (
@@ -272,7 +402,7 @@ function SchedulePageContent() {
                                                             {result.address}
                                                         </div>
                                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                                                            <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
+                                                            <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                             <span className={`px-1 py-0.5 rounded text-xs ${
                                                                 result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                             }`}>
@@ -314,7 +444,7 @@ function SchedulePageContent() {
                                                     <p className="text-sm opacity-90">{result.address}</p>
                                                     <p className="text-sm opacity-90">{result.city}, {result.country}</p>
                                                     <div className="flex items-center gap-4 mt-2 text-sm">
-                                                        <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
+                                                        <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                         <span className={`px-2 py-1 rounded text-xs ${
                                                             result.isOperational ? 'bg-green-600' : 'bg-red-600'
                                                         }`}>
@@ -348,150 +478,236 @@ function SchedulePageContent() {
         )
     }
 
+    const timeSlotBlocked = isTimeSlotBlocked()
+    const durationMinutes = timeRange[1] - timeRange[0]
+    const estimatedCost = (durationMinutes / 60) * chargerCount * 25 * 0.35 // rough calculation
+
     return (
         <div className="flex h-screen flex-col w-screen overflow-hidden">
             <header>
                 <Navbar />
             </header>
-            <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 ">
+            <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 overflow-y-auto">
                 {/* Back to search button */}
                 <div className="w-full mb-4 px-8 flex justify-start">
                     <Button 
                         variant="outline" 
                         onClick={() => setStation(null)}
-                        className="text-white border-white bg-[#FFA500]  hover:text-[#14213d]"
+                        className="text-white border-white bg-[#FFA500] hover:text-[#14213d]"
                     >
                         ← Search Different Station
                     </Button>
                 </div>
 
-                {/* Vertically centered container for the 3-column grid */}
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full px-8 text-white justify-center ">
-                    {/* Station Info */}
-                        <div className="space-y-6 md:border-r md:border-white md:border-opacity-30 md:pr-8 flex-1 flex flex-col items-center">
-                            <div className="text-center">
-                                <h2 className="text-6xl font-bold mb-22">Station</h2>
-                                <h3 className="text-xl font-semibold text-[#FFA500] mt-2">
-                                    {station.externalId || station.id} - {station.name}
-                                </h3>
-                                <p className="mt-1">{station.city}</p>
-
+                <div className="max-w-6xl mx-auto text-white w-full">
+                    <h1 className="text-4xl font-bold text-center mb-8">Make Reservation</h1>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Station Info */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-2xl font-semibold text-[#FFA500]">
+                                        {station.externalId || station.id} - {station.name}
+                                    </h2>
+                                    <p className="text-lg mt-1">{station.city} • {station.address}</p>
+                                    <div className="flex items-center gap-4 mt-2">
+                                        <span className="text-sm">{station.power || 'N/A'} kW</span>
+                                        <span className="text-sm">{station.quantityOfChargers} {station.quantityOfChargers === 1 ? 'charger' : 'chargers'} available</span>
+                                        <span className={`px-2 py-1 rounded text-xs ${
+                                            station.isOperational ? 'bg-green-600' : 'bg-red-600'
+                                        }`}>
+                                            {station.isOperational ? 'Operational' : 'Out of Service'}
+                                        </span>
+                                    </div>
+                                </div>
                                 <Button 
+                                    type="button"
                                     variant="outline" 
-                                    className="mt-4 flex items-center gap-2 bg-[#FFA500] text-white hover:text-[#14213d] mx-auto"
+                                    className="bg-[#FFA500] text-black hover:bg-[#FFA500]/90"
                                     onClick={handleNavigate}
                                 >
-                                <FaMapPin className="h-5 w-5" />
-                                NAVIGATE
-                            </Button>
+                                    <FaMapPin className="h-4 w-4 mr-2" />
+                                    Navigate
+                                </Button>
+                            </div>
                         </div>
 
-                            <div className="text-center">
-                            <h2 className="text-2xl font-bold">Equipment Details</h2>
-                            <p className="mt-2">Charging Infrastructure</p>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Left Column - Date Selection */}
+                            <div className="space-y-6">
+                                {/* Date Selection */}
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                                    <Label className="text-lg font-semibold mb-4 block">Select Date</Label>
+                                    <div className="bg-white rounded-lg p-2 w-fit mx-auto text-[#14213d] items-center justify-center">
+                                        <Calendar
+                                            className="rounded-md text-lg"
+                                            mode="single"
+                                            selected={date}
+                                            onSelect={setDate}
+                                            disabled={(date) => date < new Date()}
+                                            classNames={{
+                                                today: "bg-[#FFA500] text-white",
+                                                selected: "bg-[#14213d] text-white font-bold",
+                                                weekday: "text-[#14213d] font-bold text-center mx-2",
+                                                day: "h-10 w-10 p-0 hover:bg-gray-100 cursor-pointer",
+                                                month_grid: "w-full border-collapse",
+                                                nav_button: "h-8 w-8 bg-transparent p-0 hover:bg-gray-100 text-[#14213d]",
+                                            }}
+                                        />
+                                    </div>
+                                </div>
 
-                                <div className="mt-4 flex items-start gap-4 justify-center">
-                                <div className="bg-gray-800 p-3 rounded-full">
-                                    {/* Charging connector icon */}
-                                    <div className="h-10 w-10 flex items-center justify-center">
-                                        <div className="border-2 border-[#FFA500] rounded-full h-8 w-8 flex items-center justify-center">
-                                            <div className="bg-[#FFA500] h-3 w-3 rounded-full"></div>
+                            </div>
+
+                            {/* Middle Column - Time Selection */}
+                            <div className="space-y-6">
+                                {/* Time Slot Selection */}
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                                    <Label className="text-lg font-semibold mb-4 block">Select Time Slot</Label>
+                                    
+                                    {/* Time Range Slider */}
+                                    <div className="space-y-4 mb-6">
+                                        <div className="flex justify-between w-full mb-2">
+                                            <span>Time Range</span>
+                                            <span className="text-sm font-medium text-[#FFA500]">{formatTime(timeRange[0])} - {formatTime(timeRange[1])}</span>
+                                        </div>
+                                        
+                                        {/* Time Input Fields */}
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <Label className="text-sm text-gray-300 mb-1 block">Start Time</Label>
+                                                <Input
+                                                    type="time"
+                                                    value={formatTime(timeRange[0])}
+                                                    onChange={(e) => handleStartTimeChange(e.target.value)}
+                                                    min="06:00"
+                                                    max="23:00"
+                                                    className="bg-white text-black text-center"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-sm text-gray-300 mb-1 block">End Time</Label>
+                                                <Input
+                                                    type="time"
+                                                    value={formatTime(timeRange[1])}
+                                                    onChange={(e) => handleEndTimeChange(e.target.value)}
+                                                    min="06:00"
+                                                    max="23:00"
+                                                    className="bg-white text-black text-center"
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Slider */}
+                                        <Slider 
+                                            value={timeRange} 
+                                            onValueChange={setTimeRange} 
+                                            max={23 * 60} // 11 PM in minutes
+                                            min={6 * 60}  // 6 AM in minutes
+                                            step={5}      // 5-minute increments
+                                            className="w-full" 
+                                        />
+                                        
+                                        <div className="text-sm text-center text-[#FFA500]">
+                                            Duration: {getDuration()}
                                         </div>
                                     </div>
-                                </div>
 
-                                    <div className="text-left">
-                                        <p className="text-[#FFA500] font-semibold">{station.chargerCount} {station.chargerCount === 1 ? 'Charger' : 'Chargers'}</p>
-                                        <p className="font-semibold">{station.power || 'N/A'} kW</p>
-                                        <p>AC Charging</p>
-                                        <p>Standard Connection</p>
                                 </div>
                             </div>
 
-                                <div className="mt-6 flex items-center justify-center">
-                                <span className="text-[#FFA500] font-bold text-xl">{station.chargerCount} ×</span>
-                                    <span className={`ml-2 text-sm px-2 py-0.5 rounded ${
-                                        station.isOperational ? 'bg-green-800' : 'bg-red-800'
-                                    }`}>
-                                        {station.isOperational ? 'Operational' : 'Out of Service'}
-                                    </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Calendar column*/}
-                        <div className="flex flex-col space-y-4 items-center justify-center text-center w-full md:border-r md:border-white md:border-opacity-30 md:pr-8 flex-1">
-                            <h1 className="text-6xl mb-22 font-bold text-center ">Select a Date & Time</h1>
-                        <div className="bg-white flex flex-col text-[#14213d] rounded-lg p-2 items-center justify-center w-fit ">
-                            <Calendar
-                                className="rounded-md text-lg"
-                                mode="single"
-                                selected={date}
-                                onSelect={setDate}
-                                classNames={{
-                                    today: "bg-[#FFA500] text-white",
-                                    selected: "bg-[#14213d] text-white font-bold",
-                                    weekday: "text-[#14213d] font-bold text-center mx-2",
-                                    day: "h-10 w-10 p-0 hover:bg-gray-100 cursor-pointer",
-                                    month_grid: "w-full border-collapse",
-                                    nav_button: "h-8 w-8 bg-transparent p-0 hover:bg-gray-100 text-[#14213d]",
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Time Selection */}
-                        <div className="space-y-6 flex-1 flex flex-col items-center">
-                            <div className="text-center">
-                                <h2 className="text-6xl mb-22 font-bold text-[#FFA500]">{formatDate(date)}</h2>
-
-                                <div className="mt-6 space-y-4 flex flex-col items-center">
-                                <div className="flex items-center gap-2">
-                                    <FaClock className="h-6 w-6" />
-                                        <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
-                                            <SelectTrigger className="w-64 bg-white border-2 border-[#FFA500] text-[#14213d] font-bold">
-                                                <SelectValue placeholder="Select time slot" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {timeSlots.map((slot) => (
-                                                    <SelectItem key={slot} value={slot}>
-                                                        {slot}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                            {/* Right Column - Configuration */}
+                            <div className="space-y-6">
+                                {/* Repeat Options */}
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                                    <Label className="text-lg font-semibold mb-4 block">
+                                        <FaSync className="inline mr-2" />
+                                        Repeat Schedule
+                                    </Label>
+                                    <Select value={repeatOption} onValueChange={setRepeatOption}>
+                                        <SelectTrigger className="bg-white text-black">
+                                            <SelectValue placeholder="Select repeat option" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {repeatOptions.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {repeatOption !== "none" && (
+                                        <p className="text-sm text-gray-300 mt-2">
+                                            This reservation will repeat {repeatOption} until cancelled.
+                                        </p>
+                                    )}
+                                </div>
+                                {/* Cost Estimate */}
+                                <div className="bg-blue-600/20 border border-blue-400 rounded-lg p-6">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-lg font-semibold">Estimated Cost</span>
+                                        <span className="text-2xl font-bold text-[#FFA500]">€{estimatedCost.toFixed(2)}</span>
                                     </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <FaRedo className="h-6 w-6" />
-                                        <Select value={repeatOption} onValueChange={setRepeatOption}>
-                                            <SelectTrigger className="w-64 bg-white text-[#14213d] font-bold">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {repeatOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                    <div className="text-sm opacity-90">
+                                        {getDuration()} × {chargerCount} charger{chargerCount > 1 ? 's' : ''} × ~25 kWh × €0.35/kWh
                                     </div>
-                                </div>
-
-                                {/* Schedule Button */}
-                                <div className="mt-8">
-                                    <Button 
-                                        className="bg-[#FFA500] hover:bg-[#FFA500]/90 text-black font-bold py-3 px-8 text-lg"
-                                        disabled={!selectedTimeSlot || !date}
-                                    >
-                                        Schedule Charging Session
-                                    </Button>
+                                    {repeatOption !== "none" && (
+                                        <div className="text-xs text-blue-200 mt-2">
+                                            * Recurring {repeatOption} reservations
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    </div>
+
+                        {/* Error/Success Messages */}
+                        {error && (
+                            <div className="bg-red-600/20 border border-red-400 text-red-100 px-4 py-3 rounded flex items-center gap-2">
+                                <FaExclamationTriangle className="h-4 w-4" />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div className="bg-green-600/20 border border-green-400 text-green-100 px-4 py-3 rounded flex items-center gap-2">
+                                <FaCheck className="h-4 w-4" />
+                                <span>{successMessage}</span>
+                            </div>
+                        )}
+
+                        {/* Availability Warning */}
+                        {timeSlotBlocked && (
+                            <div className="bg-orange-600/20 border border-orange-400 text-orange-100 px-4 py-3 rounded flex items-center gap-2">
+                                <FaExclamationTriangle className="h-4 w-4" />
+                                <span>
+                                    Selected time slot has limited availability. Some hours may not have enough chargers.
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Submit Button */}
+                        <div className="text-center">
+                            <Button
+                                type="submit"
+                                className="bg-[#FFA500] hover:bg-[#FFA500]/90 text-black font-bold py-4 px-12 text-lg"
+                                disabled={isSubmitting || timeSlotBlocked || !date || !station?.isOperational}
+                                size="lg"
+                            >
+                                {isSubmitting ? (
+                                    "Creating Reservation..."
+                                ) : (
+                                    <>
+                                        <FaBolt className="h-5 w-5 mr-2" />
+                                        Reserve {getDuration()} Charging Session
+                                        {repeatOption !== "none" && (
+                                            <span className="ml-2">({repeatOption})</span>
+                                        )}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </form>
                 </div>
             </main>
         </div>
@@ -514,3 +730,4 @@ export default function SchedulePage() {
         </Suspense>
     )
 }
+

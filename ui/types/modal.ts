@@ -18,9 +18,10 @@ export interface StationFormData {
   country: string
   latitude: number
   longitude: number
-  chargerCount: number
+  quantityOfChargers: number
   power: number
   isOperational: boolean
+  status: string
 }
 
 export interface ModalBaseProps {

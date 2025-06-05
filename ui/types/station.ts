@@ -8,18 +8,20 @@ export interface ChargingStation {
   name: string
   address: string
   city: string
-  country?: string
+  country: string
   latitude: number
   longitude: number
-  status?: string
-  chargerCount: number
+  status: string
+  quantityOfChargers: number
   power?: number
   isOperational: boolean
+  price?: number
+  numberOfChargers?: number
+  minPower?: number
+  maxPower?: number
 }
 
-export interface CreateStationRequest extends Omit<ChargingStation, 'id'> {
-  // Add any additional fields specific to creation if needed
-}
+
 
 export type StationStatus = 'operational' | 'out_of_service' | 'maintenance' | 'unknown'
 
