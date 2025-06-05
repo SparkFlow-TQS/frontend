@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,7 @@ import Navbar from "@/components/navbar"
 import { type ChargingStation } from "@/types"
 import { StationAPI } from "@/lib/api"
 
-export default function SchedulePage() {
+function SchedulePageContent() {
     const [date, setDate] = useState<Date | undefined>(new Date())
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("")
     const [repeatOption, setRepeatOption] = useState("none")
@@ -389,7 +389,7 @@ export default function SchedulePage() {
 
                             <div className="text-center">
                             <h2 className="text-2xl font-bold">Equipment Details</h2>
-                            <p className="mt-2">Number of Stations/Bays: 1</p>
+                            <p className="mt-2">Charging Infrastructure</p>
 
                                 <div className="mt-4 flex items-start gap-4 justify-center">
                                 <div className="bg-gray-800 p-3 rounded-full">
@@ -402,15 +402,15 @@ export default function SchedulePage() {
                                 </div>
 
                                     <div className="text-left">
-                                        <p className="text-[#FFA500] font-semibold">{station.chargerCount} {station.chargerCount === 1 ? 'charger' : 'chargers'}</p>
+                                        <p className="text-[#FFA500] font-semibold">{station.chargerCount} {station.chargerCount === 1 ? 'Charger' : 'Chargers'}</p>
                                         <p className="font-semibold">{station.power || 'N/A'} kW</p>
-                                    <p>AC (Three-Phase)</p>
-                                    <p>32A 400V</p>
+                                        <p>AC Charging</p>
+                                        <p>Standard Connection</p>
                                 </div>
                             </div>
 
                                 <div className="mt-6 flex items-center justify-center">
-                                <span className="text-[#FFA500] font-bold text-xl">1 ×</span>
+                                <span className="text-[#FFA500] font-bold text-xl">{station.chargerCount} ×</span>
                                     <span className={`ml-2 text-sm px-2 py-0.5 rounded ${
                                         station.isOperational ? 'bg-green-800' : 'bg-red-800'
                                     }`}>
@@ -495,5 +495,22 @@ export default function SchedulePage() {
                 </div>
             </main>
         </div>
+    )
+}
+
+export default function SchedulePage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen flex-col w-screen overflow-hidden">
+                <header>
+                    <Navbar />
+                </header>
+                <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 items-center justify-center">
+                    <div className="text-white text-lg">Loading...</div>
+                </main>
+            </div>
+        }>
+            <SchedulePageContent />
+        </Suspense>
     )
 }
