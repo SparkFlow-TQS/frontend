@@ -1,4 +1,14 @@
-import { Reservation, ReservationRequest, StationAvailability, TimeSlot, ReservationConflict } from '@/types'
+import { 
+  Reservation, 
+  ReservationRequest, 
+  StationAvailability, 
+  TimeSlot, 
+  ReservationConflict,
+  ReservationDisplayStatus,
+  backendToDisplayStatus,
+  displayToBackendStatus
+} from '@/types'
+import { DEFAULT_CHARGERS_PER_STATION } from '@/types/station'
 
 const RESERVATIONS_STORAGE_KEY = 'sparkflow_reservations'
 
@@ -13,29 +23,35 @@ export class ReservationManager {
       if (!stored) return []
       
       const reservations = JSON.parse(stored)
-      // Convert date strings back to Date objects
+      // Convert date strings back to Date objects and handle legacy data
       return reservations.map((r: {
-        id: string;
-        stationId: number | string;
-        stationName: string;
-        userId?: string;
-        timeSlot: {
-          start: string;
-          end: string;
-        };
-        chargerCount: number;
-        status: string;
-        createdAt: string;
-        updatedAt: string;
-        estimatedCost?: number;
+        id: string
+        stationId: string | number
+        stationName: string
+        userId?: string | number
+        timeSlot: { start: string; end: string }
+        chargerCount: number
+        status?: string
+        displayStatus?: string
+        recurringDays?: number[] | Set<number>
+        createdAt: string
+        updatedAt: string
+        estimatedCost?: number
       }) => ({
         ...r,
+        stationId: typeof r.stationId === 'string' ? parseInt(r.stationId) : r.stationId,
+        userId: r.userId ? (typeof r.userId === 'string' ? parseInt(r.userId) : r.userId) : undefined,
         timeSlot: {
           start: new Date(r.timeSlot.start),
           end: new Date(r.timeSlot.end)
         },
         createdAt: new Date(r.createdAt),
-        updatedAt: new Date(r.updatedAt)
+        updatedAt: new Date(r.updatedAt),
+        // Handle status conversion for backward compatibility
+        status: r.status ? (r.status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') : displayToBackendStatus((r.displayStatus as ReservationDisplayStatus) || 'pending'),
+        displayStatus: r.displayStatus ? (r.displayStatus as ReservationDisplayStatus) : backendToDisplayStatus((r.status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') || 'ACTIVE'),
+        // Convert recurringDays array to Set if needed
+        recurringDays: r.recurringDays ? new Set(Array.isArray(r.recurringDays) ? r.recurringDays : Array.from(r.recurringDays)) : undefined
       }))
     } catch (error) {
       console.error('Error loading reservations from localStorage:', error)
@@ -46,35 +62,92 @@ export class ReservationManager {
   // Save reservations to localStorage
   static saveReservations(reservations: Reservation[]): void {
     try {
-      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(reservations))
+      // Convert Sets to arrays for JSON serialization
+      const serializable = reservations.map(r => ({
+        ...r,
+        recurringDays: r.recurringDays ? Array.from(r.recurringDays) : undefined
+      }))
+      localStorage.setItem(RESERVATIONS_STORAGE_KEY, JSON.stringify(serializable))
     } catch (error) {
       console.error('Error saving reservations to localStorage:', error)
     }
   }
 
   // Create a new reservation
-  static createReservation(request: ReservationRequest, stationName: string): Reservation {
+  static createReservation(request: ReservationRequest, stationName: string, userId?: number): Reservation {
+    const now = new Date()
     const reservation: Reservation = {
       id: this.generateReservationId(),
       stationId: request.stationId,
       stationName,
+      userId,
       timeSlot: request.timeSlot,
       chargerCount: request.chargerCount,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      status: 'ACTIVE',
+      displayStatus: 'pending',
+      recurringDays: request.recurringDays,
+      createdAt: now,
+      updatedAt: now,
       estimatedCost: this.calculateEstimatedCost(request.timeSlot, request.chargerCount)
     }
 
     const reservations = this.getAllReservations()
-    reservations.push(reservation)
+    
+    // If recurring, create multiple reservations for the next 4 weeks
+    if (request.recurringDays && request.recurringDays.size > 0) {
+      const recurringReservations = this.generateRecurringReservations(reservation, 4)
+      reservations.push(...recurringReservations)
+    } else {
+      reservations.push(reservation)
+    }
+    
     this.saveReservations(reservations)
-
     return reservation
   }
 
+  // Generate recurring reservations for the specified number of weeks
+  static generateRecurringReservations(baseReservation: Reservation, weeksAhead: number): Reservation[] {
+    if (!baseReservation.recurringDays || baseReservation.recurringDays.size === 0) {
+      return [baseReservation]
+    }
+
+    const reservations: Reservation[] = []
+    const startDate = new Date(baseReservation.timeSlot.start)
+    const duration = baseReservation.timeSlot.end.getTime() - baseReservation.timeSlot.start.getTime()
+
+    // Generate reservations for each recurring day in the next weeks
+    for (let week = 0; week < weeksAhead; week++) {
+      for (const dayOfWeek of baseReservation.recurringDays) {
+        const reservationDate = new Date(startDate)
+        const daysToAdd = (week * 7) + (dayOfWeek - startDate.getDay() + 7) % 7
+        reservationDate.setDate(startDate.getDate() + daysToAdd)
+        
+        // Skip if it's in the past
+        if (reservationDate <= new Date()) continue
+        
+        const reservationStart = new Date(reservationDate)
+        reservationStart.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds())
+        
+        const reservationEnd = new Date(reservationStart.getTime() + duration)
+
+        reservations.push({
+          ...baseReservation,
+          id: this.generateReservationId(),
+          timeSlot: {
+            start: reservationStart,
+            end: reservationEnd
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      }
+    }
+
+    return reservations.length > 0 ? reservations : [baseReservation]
+  }
+
   // Get reservations for a specific station
-  static getReservationsForStation(stationId: number | string): Reservation[] {
+  static getReservationsForStation(stationId: number): Reservation[] {
     return this.getAllReservations().filter(r => r.stationId === stationId)
   }
 
@@ -90,42 +163,47 @@ export class ReservationManager {
   }
 
   // Update reservation status
-  static updateReservationStatus(reservationId: string, status: Reservation['status']): boolean {
+  static updateReservationStatus(reservationId: string, displayStatus: ReservationDisplayStatus): boolean {
     const reservations = this.getAllReservations()
     const index = reservations.findIndex(r => r.id === reservationId)
     
     if (index === -1) return false
     
-    reservations[index].status = status
+    reservations[index].displayStatus = displayStatus
+    reservations[index].status = displayToBackendStatus(displayStatus)
     reservations[index].updatedAt = new Date()
     this.saveReservations(reservations)
     
     return true
   }
 
-  // Delete a reservation
+  // Delete a reservation (mark as cancelled for backend compatibility)
   static deleteReservation(reservationId: string): boolean {
     const reservations = this.getAllReservations()
-    const filtered = reservations.filter(r => r.id !== reservationId)
+    const index = reservations.findIndex(r => r.id === reservationId)
     
-    if (filtered.length === reservations.length) return false
+    if (index === -1) return false
     
-    this.saveReservations(filtered)
+    reservations[index].status = 'CANCELLED'
+    reservations[index].displayStatus = 'cancelled'
+    reservations[index].updatedAt = new Date()
+    this.saveReservations(reservations)
+    
     return true
   }
 
   // Check availability for a station at a specific time slot
   static checkAvailability(
-    stationId: number | string, 
+    stationId: number, 
     timeSlot: TimeSlot, 
-    totalChargers: number,
+    totalChargers: number = DEFAULT_CHARGERS_PER_STATION,
     excludeReservationId?: string
   ): { availableChargers: number; conflicts: ReservationConflict[] } {
     const reservations = this.getReservationsForStation(stationId)
-      .filter(r => r.id !== excludeReservationId && r.status !== 'cancelled')
+      .filter(r => r.id !== excludeReservationId && r.status !== 'CANCELLED')
 
     const conflicts: ReservationConflict[] = []
-    let maxChargeersInUse = 0
+    let maxChargersInUse = 0
 
     // Check each time point for overlapping reservations
     const timePoints = this.generateTimePoints(timeSlot, reservations)
@@ -136,7 +214,7 @@ export class ReservationManager {
       )
 
       const chargersInUse = overlappingReservations.reduce((sum, res) => sum + res.chargerCount, 0)
-      maxChargeersInUse = Math.max(maxChargeersInUse, chargersInUse)
+      maxChargersInUse = Math.max(maxChargersInUse, chargersInUse)
 
       if (chargersInUse >= totalChargers) {
         conflicts.push({
@@ -148,16 +226,16 @@ export class ReservationManager {
     }
 
     return {
-      availableChargers: Math.max(0, totalChargers - maxChargeersInUse),
+      availableChargers: Math.max(0, totalChargers - maxChargersInUse),
       conflicts
     }
   }
 
   // Generate availability data for a station for a specific date
   static getStationAvailability(
-    stationId: number | string, 
+    stationId: number, 
     date: Date, 
-    totalChargers: number
+    totalChargers: number = DEFAULT_CHARGERS_PER_STATION
   ): StationAvailability {
     const dateStr = date.toISOString().split('T')[0]
     const timeSlots = []
@@ -191,78 +269,98 @@ export class ReservationManager {
     }
   }
 
-  // ===== UTILITY METHODS =====
+  // ===== PRIVATE HELPER METHODS =====
 
   private static generateReservationId(): string {
-    return `res_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    return 'res_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
   }
 
   private static calculateEstimatedCost(timeSlot: TimeSlot, chargerCount: number): number {
-    const durationHours = (timeSlot.end.getTime() - timeSlot.start.getTime()) / (1000 * 60 * 60)
-    const baseRate = 0.35 // €0.35 per kWh
-    const estimatedKwh = 25 // Average kWh per hour
-    return durationHours * chargerCount * estimatedKwh * baseRate
+    const hours = (timeSlot.end.getTime() - timeSlot.start.getTime()) / (1000 * 60 * 60)
+    const baseRatePerHour = 6.50 // €6.50 per hour per charger
+    return Number((hours * chargerCount * baseRatePerHour).toFixed(2))
   }
 
   private static generateTimePoints(timeSlot: TimeSlot, reservations: Reservation[]): Date[] {
     const points = new Set<number>()
     
-    // Add the requested time slot boundaries
+    // Add start and end of the requested slot
     points.add(timeSlot.start.getTime())
     points.add(timeSlot.end.getTime())
     
-    // Add all reservation boundaries that might overlap
-    reservations.forEach(reservation => {
-      points.add(reservation.timeSlot.start.getTime())
-      points.add(reservation.timeSlot.end.getTime())
-    })
+    // Add start and end times of overlapping reservations
+    for (const reservation of reservations) {
+      if (reservation.timeSlot.start < timeSlot.end && reservation.timeSlot.end > timeSlot.start) {
+        points.add(reservation.timeSlot.start.getTime())
+        points.add(reservation.timeSlot.end.getTime())
+      }
+    }
     
-    return Array.from(points)
-      .sort((a, b) => a - b)
-      .map(time => new Date(time))
-      .filter(date => date >= timeSlot.start && date <= timeSlot.end)
+    return Array.from(points).sort((a, b) => a - b).map(timestamp => new Date(timestamp))
   }
 
   // ===== DEMO DATA GENERATOR (for testing) =====
   
-  static generateDemoReservations(stationId: number | string, stationName: string): void {
+  static generateDemoReservations(stationId: number, stationName: string): void {
+    const now = new Date()
     const demoReservations: Reservation[] = [
       {
         id: 'demo_1',
         stationId,
         stationName,
+        userId: 1,
         timeSlot: {
-          start: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-          end: new Date(Date.now() + 4 * 60 * 60 * 1000)    // 4 hours from now
+          start: new Date(now.getTime() + 2 * 60 * 60 * 1000), // 2 hours from now
+          end: new Date(now.getTime() + 4 * 60 * 60 * 1000)    // 4 hours from now
         },
-        chargerCount: 2,
-        status: 'confirmed',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        estimatedCost: 25.50
+        chargerCount: 1,
+        status: 'ACTIVE',
+        displayStatus: 'confirmed',
+        createdAt: now,
+        updatedAt: now,
+        estimatedCost: 13.00
       },
       {
         id: 'demo_2',
         stationId,
         stationName,
+        userId: 1,
         timeSlot: {
-          start: new Date(Date.now() + 6 * 60 * 60 * 1000), // 6 hours from now
-          end: new Date(Date.now() + 8 * 60 * 60 * 1000)    // 8 hours from now
+          start: new Date(now.getTime() + 6 * 60 * 60 * 1000), // 6 hours from now
+          end: new Date(now.getTime() + 8 * 60 * 60 * 1000)    // 8 hours from now
+        },
+        chargerCount: 2,
+        status: 'ACTIVE',
+        displayStatus: 'pending',
+        recurringDays: new Set([1, 3, 5]), // Monday, Wednesday, Friday
+        createdAt: now,
+        updatedAt: now,
+        estimatedCost: 26.00
+      },
+      {
+        id: 'demo_3',
+        stationId,
+        stationName,
+        userId: 1,
+        timeSlot: {
+          start: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Yesterday
+          end: new Date(now.getTime() - 22 * 60 * 60 * 1000)    // Yesterday + 2h
         },
         chargerCount: 1,
-        status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        estimatedCost: 12.75
+        status: 'COMPLETED',
+        displayStatus: 'completed',
+        createdAt: new Date(now.getTime() - 25 * 60 * 60 * 1000),
+        updatedAt: new Date(now.getTime() - 22 * 60 * 60 * 1000),
+        estimatedCost: 13.00
       }
     ]
 
     const existing = this.getAllReservations()
-    const filtered = existing.filter(r => r.stationId !== stationId)
+    const filtered = existing.filter(r => r.stationId !== stationId || !r.id.startsWith('demo_'))
     this.saveReservations([...filtered, ...demoReservations])
   }
 
-  // Clear all reservations (for testing)
+  // Clear all reservations
   static clearAllReservations(): void {
     localStorage.removeItem(RESERVATIONS_STORAGE_KEY)
   }
