@@ -1,21 +1,15 @@
 "use client"
 
 import { useState } from "react"
+import { FaTimes } from "react-icons/fa"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { FaTimes } from "react-icons/fa"
-import { type ChargingStation } from "./LeafletMap"
+import { Switch } from "@/components/ui/switch"
 import { StationAPI } from "@/lib/api"
 
-interface CreateStationModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onStationCreated: (station: ChargingStation) => void
-  defaultLocation?: { lat: number; lng: number }
-}
+// Import types from centralized location
+import type { CreateStationModalProps, StationFormData } from '@/types'
 
 export default function CreateStationModal({ 
   isOpen, 
@@ -23,14 +17,14 @@ export default function CreateStationModal({
   onStationCreated, 
   defaultLocation 
 }: CreateStationModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StationFormData>({
     name: "",
     address: "",
     city: "",
     country: "Portugal",
     latitude: defaultLocation?.lat || 40.623361,
     longitude: defaultLocation?.lng || -8.650256,
-    connectorType: "Type 2",
+    chargerCount: 2,
     power: 22,
     isOperational: true
   })
@@ -56,7 +50,7 @@ export default function CreateStationModal({
         country: "Portugal",
         latitude: defaultLocation?.lat || 40.623361,
         longitude: defaultLocation?.lng || -8.650256,
-        connectorType: "Type 2",
+        chargerCount: 2,
         power: 22,
         isOperational: true
       })
@@ -68,7 +62,7 @@ export default function CreateStationModal({
     }
   }
 
-  const handleInputChange = (field: keyof typeof formData, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof StationFormData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -176,21 +170,23 @@ export default function CreateStationModal({
             </div>
           </div>
 
-          {/* Connector Type */}
+          {/* Charger Count */}
           <div className="space-y-2">
-            <Label htmlFor="connectorType">Connector Type</Label>
-            <Select value={formData.connectorType} onValueChange={(value) => handleInputChange('connectorType', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Type 2">Type 2</SelectItem>
-                <SelectItem value="CCS">CCS</SelectItem>
-                <SelectItem value="CHAdeMO">CHAdeMO</SelectItem>
-                <SelectItem value="Tesla">Tesla</SelectItem>
-                <SelectItem value="Type 1">Type 1</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="chargerCount">Number of Chargers *</Label>
+            <Input
+              id="chargerCount"
+              type="number"
+              min="1"
+              max="50"
+              value={formData.chargerCount}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 1 : parseInt(e.target.value)
+                handleInputChange('chargerCount', isNaN(value) ? 1 : Math.max(1, Math.min(50, value)))
+              }}
+              placeholder="e.g., 2"
+              required
+            />
+            <p className="text-xs text-gray-500">Between 1 and 50 chargers</p>
           </div>
 
           {/* Power */}
@@ -210,28 +206,29 @@ export default function CreateStationModal({
 
           {/* Operational Status */}
           <div className="flex items-center space-x-2">
-            <Checkbox
+            <Switch
               id="isOperational"
               checked={formData.isOperational}
-              onCheckedChange={(checked) => handleInputChange('isOperational', !!checked)}
+              onCheckedChange={(checked: boolean) => handleInputChange('isOperational', checked)}
             />
             <Label htmlFor="isOperational">Station is operational</Label>
           </div>
 
-          {/* Actions */}
+          {/* Form Actions */}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               className="flex-1"
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
               className="flex-1 bg-[#14213d] hover:bg-[#14213d]/90"
+              disabled={isSubmitting}
             >
               {isSubmitting ? "Creating..." : "Create Station"}
             </Button>
