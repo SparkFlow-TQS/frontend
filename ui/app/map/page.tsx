@@ -161,6 +161,9 @@ export default function MapPage() {
         (error) => {
           console.error('Error getting user location:', error)
           setError('Unable to get your location. Please enable location services.')
+          // set user location to default location
+          setUserLocation([40.623361, -8.650256])
+          setCenter([40.623361, -8.650256])
           setLoading(false)
         }
       )

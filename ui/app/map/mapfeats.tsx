@@ -5,14 +5,10 @@ import { AiOutlineAim } from "react-icons/ai";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import {
     Menubar,
-    MenubarCheckboxItem,
     MenubarContent,
     MenubarItem,
     MenubarMenu,
     MenubarSeparator,
-    MenubarSub,
-    MenubarSubContent,
-    MenubarSubTrigger,
     MenubarTrigger,
 } from "@/components/ui/menubar"
 import { Slider } from "@/components/ui/slider"
@@ -70,16 +66,7 @@ export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesP
         }
     }, [connectorFilters, powerValue, priceValue, distanceValue, onFiltersChange]);
 
-    const toggleConnector = (connector: string, e: React.MouseEvent) => {
-        // Prevent menu from closing
-        e.preventDefault();
-        e.stopPropagation();
-        
-        setConnectorFilters(prev => ({
-            ...prev,
-            [connector]: !prev[connector as keyof typeof connectorFilters]
-        }));
-    };
+
 
     const handleLocationClick = () => {
         if (onLocationRequest) {
@@ -118,7 +105,7 @@ export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesP
                         <Slider 
                             value={[distanceValue]} 
                             onValueChange={(val) => setDistanceValue(val[0])} 
-                            max={2000} 
+                            max={600} 
                             min={1} 
                             step={1} 
                             className="w-full" 
@@ -161,60 +148,6 @@ export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesP
                     </MenubarItem>
 
                     <MenubarSeparator />
-
-                    {/* Connector Type Filters */}
-                    <MenubarSub>
-                        <MenubarSubTrigger>Connector Type</MenubarSubTrigger>
-                        <MenubarSubContent>
-                            <div 
-                                onClick={(e) => toggleConnector('type2', e)}
-                                className="block w-full"
-                            >
-                                <MenubarCheckboxItem 
-                                    checked={connectorFilters.type2}
-                                    onSelect={(e) => e.preventDefault()}
-                                >
-                                    Type 2
-                                </MenubarCheckboxItem>
-                            </div>
-                            <div 
-                                onClick={(e) => toggleConnector('chademo', e)}
-                                className="block w-full"
-                            >
-                                <MenubarCheckboxItem 
-                                    checked={connectorFilters.chademo}
-                                    onSelect={(e) => e.preventDefault()}
-                                >
-                                    CHAdeMO
-                                </MenubarCheckboxItem>
-                            </div>
-                            <div 
-                                onClick={(e) => toggleConnector('ccs', e)}
-                                className="block w-full"
-                            >
-                                <MenubarCheckboxItem 
-                                    checked={connectorFilters.ccs}
-                                    onSelect={(e) => e.preventDefault()}
-                                >
-                                    CCS
-                                </MenubarCheckboxItem>
-                            </div>
-                            <div 
-                                onClick={(e) => toggleConnector('tesla', e)}
-                                className="block w-full"
-                            >
-                                <MenubarCheckboxItem 
-                                    checked={connectorFilters.tesla}
-                                    onSelect={(e) => e.preventDefault()}
-                                >
-                                    Tesla
-                                </MenubarCheckboxItem>
-                            </div>
-                        </MenubarSubContent>
-                    </MenubarSub>
-
-                    <MenubarSeparator />
-
                     {/* Clear Filters Button */}
                     <MenubarItem onSelect={(e) => e.preventDefault()}>
                         <Button
