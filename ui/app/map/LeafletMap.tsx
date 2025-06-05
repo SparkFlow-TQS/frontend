@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet'
 import { Button } from '../../components/ui/button'
-import { FaMapMarkerAlt, FaClock, FaBolt } from 'react-icons/fa'
+import { FaMapMarkerAlt, FaClock } from 'react-icons/fa'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { ChargingStation } from '@/types'
+
 
 // Import types from centralized location
 import type {
@@ -145,14 +145,7 @@ export default function LeafletMap({
     })
   }
 
-  // Handle reserve button click - navigate to schedule page
-  const handleReserveClick = (station: ChargingStation) => {
-    if (typeof window !== 'undefined') {
-      // Navigate to schedule page with station data
-      const stationData = encodeURIComponent(JSON.stringify(station))
-      window.location.href = `/schedule?stationData=${stationData}`
-    }
-  }
+
 
   return (
     <MapContainer 

@@ -1,9 +1,9 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { FaCalendarAlt, FaBolt, FaClock, FaTrash, FaEdit, FaCheck, FaTimes } from 'react-icons/fa'
+import { FaCalendarAlt, FaBolt, FaClock, FaTrash, FaCheck } from 'react-icons/fa'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Reservation } from '@/types'
 import { ReservationManager } from '@/lib/reservations'
@@ -211,11 +211,6 @@ export default function ReservationDashboard() {
                           )}
                         </div>
                       </div>
-                      {reservation.vehicleInfo?.make && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Vehicle: {reservation.vehicleInfo.make} {reservation.vehicleInfo.model}
-                        </p>
-                      )}
                     </div>
                     <div className="flex gap-2">
                       {reservation.status === 'pending' && (

@@ -21,9 +21,7 @@ export interface ChargingStation {
   maxPower?: number
 }
 
-export interface CreateStationRequest extends Omit<ChargingStation, 'id'> {
-  // Fields required for creation
-}
+
 
 export type StationStatus = 'operational' | 'out_of_service' | 'maintenance' | 'unknown'
 
