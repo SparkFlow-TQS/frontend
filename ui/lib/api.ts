@@ -1,4 +1,4 @@
-import { ChargingStation } from '@/components/LeafletMap'
+import { ChargingStation } from '@/app/map/LeafletMap'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
@@ -17,6 +17,22 @@ export class StationAPI {
       return data
     } catch (error) {
       console.error('Error fetching stations:', error)
+      throw error
+    }
+  }
+
+  static async getTotalStationCount(): Promise<number> {
+    try {
+      const response = await fetch(`${this.baseURL}/count`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch station count: ${response.status}`)
+      }
+      
+      const count = await response.json()
+      return count
+    } catch (error) {
+      console.error('Error fetching station count:', error)
       throw error
     }
   }
