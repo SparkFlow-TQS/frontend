@@ -38,7 +38,7 @@ frontend_nodejs_version_info{version="${process.version}"} 1
         'Content-Type': 'text/plain; charset=utf-8',
       },
     });
-  } catch (error) {
+  } catch {
     return new NextResponse('# Frontend metrics unavailable\n', {
       status: 503,
       headers: {
