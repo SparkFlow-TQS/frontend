@@ -5,11 +5,11 @@
 import { ChargingStation } from './station'
 
 export interface FilterCriteria {
-  connectorTypes: string[]
-  minPower: number
-  maxPower: number
-  maxPrice: number
-  maxDistance: number
+  minChargers?: number
+  minPower?: number
+  maxPower?: number
+  maxPrice?: number
+  maxDistance?: number
 }
 
 export interface MapFeaturesProps {

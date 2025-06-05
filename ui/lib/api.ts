@@ -1,4 +1,4 @@
-import { ChargingStation } from '@/app/map/LeafletMap'
+import { ChargingStation } from '@/types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
@@ -95,12 +95,12 @@ export class StationAPI {
     name?: string
     city?: string
     country?: string
-    connectorType?: string
+    minChargers?: number
   }): Promise<ChargingStation[]> {
     try {
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value)
+        if (value) params.append(key, value.toString())
       })
       
       const response = await fetch(`${this.baseURL}/search?${params}`)

@@ -206,7 +206,7 @@ export default function MapPage() {
             latitude: 40.623361,
             longitude: -8.650256,
             power: 22,
-            connectorType: "Type 2",
+            chargerCount: 2,
             isOperational: true
           }
         ]
@@ -231,16 +231,11 @@ export default function MapPage() {
     }
 
     const filtered = stations.filter(station => {
-      // Connector type filter
-      if (filters.connectorTypes.length > 0) {
-        if (!filters.connectorTypes.includes(station.connectorType)) {
+      if (station.power !== null && station.power !== undefined) {
+        if (filters.minPower && station.power < filters.minPower) {
           return false
         }
-      }
-
-      // Power range filter
-      if (station.power !== null && station.power !== undefined) {
-        if (station.power < filters.minPower || station.power > filters.maxPower) {
+        if (filters.maxPower && station.power > filters.maxPower) {
           return false
         }
       }
@@ -494,7 +489,7 @@ export default function MapPage() {
                           {result.address}
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                          <span>{result.power || 'N/A'} kW • {result.connectorType}</span>
+                          <span>{result.power || 'N/A'} kW • {result.chargerCount} {result.chargerCount === 1 ? 'charger' : 'chargers'}</span>
                           <span className={`px-1 py-0.5 rounded text-xs ${
                             result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>

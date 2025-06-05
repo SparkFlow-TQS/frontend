@@ -18,12 +18,6 @@ import { Button } from "@/components/ui/button"
 import type { MapFeaturesProps, FilterCriteria } from '@/types'
 
 export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesProps) {
-    const [connectorFilters, setConnectorFilters] = useState({
-        type2: false,
-        chademo: false,
-        ccs: false,
-        tesla: false
-    });
     const [powerValue, setPowerValue] = useState([22, 50]); // Min and max power
     const [priceValue, setPriceValue] = useState(50);
     const [distanceValue, setDistanceValue] = useState(25);
@@ -42,20 +36,7 @@ export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesP
     // Update filters when any filter changes
     useEffect(() => {
         if (onFiltersChange) {
-            const activeConnectors = Object.entries(connectorFilters)
-                .filter(([, isActive]) => isActive)
-                .map(([type]) => {
-                    switch (type) {
-                        case 'type2': return 'Type 2';
-                        case 'chademo': return 'CHAdeMO';
-                        case 'ccs': return 'CCS';
-                        case 'tesla': return 'Tesla';
-                        default: return type;
-                    }
-                });
-
             const filterCriteria: FilterCriteria = {
-                connectorTypes: activeConnectors,
                 minPower: powerValue[0],
                 maxPower: powerValue[1],
                 maxPrice: priceValue,
@@ -64,9 +45,7 @@ export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesP
 
             onFiltersChange(filterCriteria);
         }
-    }, [connectorFilters, powerValue, priceValue, distanceValue, onFiltersChange]);
-
-
+    }, [ powerValue, priceValue, distanceValue, onFiltersChange]);
 
     const handleLocationClick = () => {
         if (onLocationRequest) {
@@ -75,12 +54,6 @@ export function MapFeatures({ onLocationRequest, onFiltersChange }: MapFeaturesP
     };
 
     const clearFilters = () => {
-        setConnectorFilters({
-            type2: false,
-            chademo: false,
-            ccs: false,
-            tesla: false
-        });
         setPowerValue([22, 50]);
         setPriceValue(50);
         setDistanceValue(25);

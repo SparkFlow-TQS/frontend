@@ -5,7 +5,6 @@ import { FaTimes } from "react-icons/fa"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { StationAPI } from "@/lib/api"
 
@@ -25,7 +24,7 @@ export default function CreateStationModal({
     country: "Portugal",
     latitude: defaultLocation?.lat || 40.623361,
     longitude: defaultLocation?.lng || -8.650256,
-    connectorType: "Type 2",
+    chargerCount: 2,
     power: 22,
     isOperational: true
   })
@@ -51,7 +50,7 @@ export default function CreateStationModal({
         country: "Portugal",
         latitude: defaultLocation?.lat || 40.623361,
         longitude: defaultLocation?.lng || -8.650256,
-        connectorType: "Type 2",
+        chargerCount: 2,
         power: 22,
         isOperational: true
       })
@@ -171,21 +170,23 @@ export default function CreateStationModal({
             </div>
           </div>
 
-          {/* Connector Type */}
+          {/* Charger Count */}
           <div className="space-y-2">
-            <Label htmlFor="connectorType">Connector Type</Label>
-            <Select value={formData.connectorType} onValueChange={(value) => handleInputChange('connectorType', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Type 2">Type 2</SelectItem>
-                <SelectItem value="CCS">CCS</SelectItem>
-                <SelectItem value="CHAdeMO">CHAdeMO</SelectItem>
-                <SelectItem value="Tesla">Tesla</SelectItem>
-                <SelectItem value="Type 1">Type 1</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="chargerCount">Number of Chargers *</Label>
+            <Input
+              id="chargerCount"
+              type="number"
+              min="1"
+              max="50"
+              value={formData.chargerCount}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 1 : parseInt(e.target.value)
+                handleInputChange('chargerCount', isNaN(value) ? 1 : Math.max(1, Math.min(50, value)))
+              }}
+              placeholder="e.g., 2"
+              required
+            />
+            <p className="text-xs text-gray-500">Between 1 and 50 chargers</p>
           </div>
 
           {/* Power */}

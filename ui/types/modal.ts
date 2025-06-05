@@ -18,7 +18,7 @@ export interface StationFormData {
   country: string
   latitude: number
   longitude: number
-  connectorType: string
+  chargerCount: number
   power: number
   isOperational: boolean
 }

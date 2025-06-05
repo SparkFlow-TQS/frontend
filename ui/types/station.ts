@@ -12,7 +12,7 @@ export interface ChargingStation {
   latitude: number
   longitude: number
   status?: string
-  connectorType: string
+  chargerCount: number
   power?: number
   isOperational: boolean
 }
@@ -23,11 +23,9 @@ export interface CreateStationRequest extends Omit<ChargingStation, 'id'> {
 
 export type StationStatus = 'operational' | 'out_of_service' | 'maintenance' | 'unknown'
 
-export type ConnectorType = 'Type 1' | 'Type 2' | 'CCS' | 'CHAdeMO' | 'Tesla'
-
 export interface StationSearchFilters {
   name?: string
   city?: string
   country?: string
-  connectorType?: string
+  minChargers?: number
 } 

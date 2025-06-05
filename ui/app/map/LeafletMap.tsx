@@ -218,7 +218,7 @@ export default function LeafletMap({
               <h3 className="font-bold text-lg">{station.name}</h3>
               <p className="text-sm">{station.externalId || station.id} - {station.city}</p>
               <p className="text-sm">{station.address}</p>
-              <p className="text-sm mt-1">{station.power || 'N/A'} kW • {station.connectorType}</p>
+              <p className="text-sm mt-1">{station.power || 'N/A'} kW • {station.chargerCount} {station.chargerCount === 1 ? 'charger' : 'chargers'}</p>
               <p className="text-sm font-medium mt-1">
                 <span className={`px-2 py-0.5 rounded ${station.isOperational ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {station.isOperational ? 'Operational' : 'Out of Service'}
