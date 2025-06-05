@@ -48,8 +48,8 @@ export class ReservationManager {
         createdAt: new Date(r.createdAt),
         updatedAt: new Date(r.updatedAt),
         // Handle status conversion for backward compatibility
-        status: r.status || displayToBackendStatus(r.displayStatus || 'pending'),
-        displayStatus: r.displayStatus || backendToDisplayStatus(r.status || 'ACTIVE'),
+        status: r.status ? (r.status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') : displayToBackendStatus((r.displayStatus as ReservationDisplayStatus) || 'pending'),
+        displayStatus: r.displayStatus ? (r.displayStatus as ReservationDisplayStatus) : backendToDisplayStatus((r.status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') || 'ACTIVE'),
         // Convert recurringDays array to Set if needed
         recurringDays: r.recurringDays ? new Set(Array.isArray(r.recurringDays) ? r.recurringDays : Array.from(r.recurringDays)) : undefined
       }))
