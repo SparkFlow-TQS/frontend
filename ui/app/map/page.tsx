@@ -189,6 +189,7 @@ export default function MapPage() {
         const radius = filters?.maxDistance || 25 // Use filter radius or default 25km
         
         const stationsData = await StationAPI.getNearbyStations(lat, lng, radius)
+        console.log('Stations data:', stationsData)
         setStations(stationsData)
         setFilteredStations(stationsData) // Initialize filtered stations
       } catch (err) {
@@ -353,11 +354,14 @@ export default function MapPage() {
   useEffect(() => {
     const fetchTotalCount = async () => {
       try {
+        console.log('Fetching total station count...')
         const count = await StationAPI.getTotalStationCount()
+        console.log('Total station count received:', count)
         setTotalStationCount(count)
       } catch (err) {
         console.error('Failed to fetch total station count:', err)
-        // Don't set error for this, just log it
+        // Set to 0 to indicate we couldn't fetch the total count
+        setTotalStationCount(0)
       }
     }
 
@@ -523,15 +527,25 @@ export default function MapPage() {
         {/* Station count indicator */}
         <div className="absolute top-20 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md z-10">
           <p className="text-sm text-gray-700">
-            Showing {filteredStations.length} of {totalStationCount > 0 ? totalStationCount : stations.length} stations
-            {userLocation && (
+            Showing {filteredStations.length} stations
+            {totalStationCount > 0 && (
+              <span className="ml-1">
+                of {totalStationCount.toLocaleString()} total
+              </span>
+            )}
+            {searchCenter && (
               <span className="ml-1 text-blue-600">
-                within {filters?.maxDistance || 25}km
+                within {filters?.maxDistance || 25}km of search location
+              </span>
+            )}
+            {!searchCenter && userLocation && (
+              <span className="ml-1 text-blue-600">
+                within {filters?.maxDistance || 25}km of your location
               </span>
             )}
             {filters && Object.values(filters).some(v => 
               Array.isArray(v) ? v.length > 0 : 
-              (v !== (filters?.maxDistance || 25) && v !== filters.maxDistance)
+              (v !== null && v !== undefined && v !== (filters?.maxDistance || 25))
             ) && (
               <span className="ml-2 text-orange-600">(filtered)</span>
             )}

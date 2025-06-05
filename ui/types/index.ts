@@ -18,8 +18,12 @@ export * from './api'
 // Common/shared types
 export * from './common'
 
+// Reservation types
+export * from './reservation'
+
 // Re-export commonly used types for convenience
 export type { ChargingStation } from './station'
 export type { FilterCriteria, MapFeaturesProps } from './map'
 export type { CreateStationModalProps } from './modal'
-export type { LoadingState, Location } from './common' 
+export type { LoadingState, Location } from './common'
+export type { Reservation, ReservationRequest, TimeSlot, StationAvailability } from './reservation' 

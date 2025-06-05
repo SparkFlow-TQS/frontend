@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet'
 import { Button } from '../../components/ui/button'
-import { FaMapMarkerAlt, FaClock } from 'react-icons/fa'
+import { FaMapMarkerAlt, FaClock, FaBolt } from 'react-icons/fa'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { ChargingStation } from '@/types'
 
 // Import types from centralized location
 import type {
@@ -144,6 +145,15 @@ export default function LeafletMap({
     })
   }
 
+  // Handle reserve button click - navigate to schedule page
+  const handleReserveClick = (station: ChargingStation) => {
+    if (typeof window !== 'undefined') {
+      // Navigate to schedule page with station data
+      const stationData = encodeURIComponent(JSON.stringify(station))
+      window.location.href = `/schedule?stationData=${stationData}`
+    }
+  }
+
   return (
     <MapContainer 
       center={center}
@@ -225,6 +235,16 @@ export default function LeafletMap({
                 </span>
               </p>
               <div className="mt-2 space-y-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                  onClick={() => handleReserveClick(station)}
+                  disabled={!station.isOperational}
+                >
+                  <FaBolt className="h-3 w-3" />
+                  <span>Reserve</span>
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
