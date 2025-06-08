@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle } from "react-icons/fa"
+import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle, FaEuroSign, FaChargingStation, FaExclamationTriangle } from "react-icons/fa"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
 import { Reservation } from "@/types"
+import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, CostTrendData } from "@/lib/api"
 
 interface HoveredData {
   type: 'stat' | 'month' | 'week' | 'trend'
@@ -35,154 +36,227 @@ interface HoveredData {
 export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isUnauthorized, setIsUnauthorized] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [hoveredData, setHoveredData] = useState<HoveredData | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
+  // API Statistics state
+  const [currentMonthStats, setCurrentMonthStats] = useState<CurrentMonthStats | null>(null)
+  const [apiMonthlyStats, setApiMonthlyStats] = useState<MonthlyData[]>([])
+  const [apiWeeklyStats, setApiWeeklyStats] = useState<WeeklyData[]>([])
+  const [costTrend, setCostTrend] = useState<CostTrendData[]>([])
+  const [usingFallbackData, setUsingFallbackData] = useState(false)
+
   useEffect(() => {
-    const loadReservations = () => {
+    const loadData = async () => {
+      setLoading(true)
+      setError(null)
+      setIsUnauthorized(false)
+      
       try {
-        const allReservations = ReservationManager.getAllReservations()
-        setReservations(allReservations)
-      } catch (error) {
-        console.error('Error loading reservations:', error)
-      } finally {
-        setLoading(false)
+        // Try to load statistics from API
+        const [currentStats, monthlyData, weeklyData, trendData] = await Promise.all([
+          StatisticsAPI.getCurrentMonthStats(),
+          StatisticsAPI.getMonthlyStats(12),
+          StatisticsAPI.getWeeklyCurrentMonthStats(),
+          StatisticsAPI.getCostTrend(8)
+        ])
+        
+        setCurrentMonthStats(currentStats)
+        setApiMonthlyStats(monthlyData)
+        setApiWeeklyStats(weeklyData)
+        setCostTrend(trendData)
+        setUsingFallbackData(false)
+        
+      } catch (apiError: any) {
+        console.error('Error loading statistics from API:', apiError)
+        
+        // Check if it's a 403 unauthorized error
+        if (apiError.message?.includes('403') || apiError.status === 403) {
+          setIsUnauthorized(true)
+          setError('Acesso negado. Você precisa estar autenticado para visualizar as estatísticas.')
+          setLoading(false)
+          return
+        }
+        
+        // For other errors, fall back to localStorage data
+        console.log('Falling back to localStorage data due to API error')
+        setUsingFallbackData(true)
+        loadReservationsFromStorage()
+      }
+      
+      setLoading(false)
+    }
+
+    const loadReservationsFromStorage = () => {
+      try {
+        const localReservations = ReservationManager.getAllReservations()
+        setReservations(localReservations)
+      } catch (storageError) {
+        console.error('Error loading reservations from localStorage:', storageError)
+        setError('Erro ao carregar dados locais. Tente recarregar a página.')
       }
     }
 
-    loadReservations()
+    loadData()
 
-    // Listen for localStorage changes to update in real-time
+    // Listen for storage changes
     const handleStorageChange = () => {
-      loadReservations()
-      setRefreshTrigger(prev => prev + 1)
+      if (usingFallbackData) {
+        loadReservationsFromStorage()
+      }
+    }
+
+    // Listen for custom events from other components
+    const handleReservationUpdate = () => {
+      if (usingFallbackData) {
+        loadReservationsFromStorage()
+      }
     }
 
     window.addEventListener('storage', handleStorageChange)
-    
-    // Custom event for same-tab updates
-    window.addEventListener('reservationsUpdated', handleStorageChange)
+    window.addEventListener('reservationUpdated', handleReservationUpdate)
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('reservationsUpdated', handleStorageChange)
+      window.removeEventListener('reservationUpdated', handleReservationUpdate)
     }
-  }, [refreshTrigger])
+  }, [usingFallbackData])
 
-  // Calculate monthly stats from reservations
+  // Calculate monthly stats from reservations (fallback when using localStorage)
   const calculateMonthlyStats = () => {
+    if (!usingFallbackData && currentMonthStats) {
+      return {
+        totalCost: currentMonthStats.totalCost,
+        estimatedKwh: currentMonthStats.estimatedKwh,
+        totalSessions: currentMonthStats.totalSessions,
+        co2Saved: currentMonthStats.co2Saved,
+        avgCostPerSession: currentMonthStats.avgCostPerSession
+      }
+    }
+
+    // Fallback calculation from localStorage reservations
     const currentMonth = new Date().getMonth()
     const currentYear = new Date().getFullYear()
     
-    const monthlyReservations = reservations.filter(r => {
-      const reservationDate = new Date(r.timeSlot.start)
+    const currentMonthReservations = reservations.filter(reservation => {
+      const reservationDate = new Date(reservation.timeSlot.start)
       return reservationDate.getMonth() === currentMonth && 
              reservationDate.getFullYear() === currentYear &&
-             r.displayStatus !== 'cancelled'
+             reservation.displayStatus !== 'cancelled'
     })
 
-    const totalCost = monthlyReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0)
-    const totalSessions = monthlyReservations.length
-    const totalDuration = monthlyReservations.reduce((sum, r) => {
-      const duration = (new Date(r.timeSlot.end).getTime() - new Date(r.timeSlot.start).getTime()) / (1000 * 60 * 60)
-      return sum + duration
+    const totalCost = currentMonthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+    const totalSessions = currentMonthReservations.length
+    const estimatedKwh = currentMonthReservations.reduce((sum, reservation) => {
+      const duration = (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
+      return sum + (duration * 22) // Assuming 22kW average charging power
     }, 0)
-    
-    // Estimate kWh (assuming average 25kW charging power)
-    const estimatedKwh = Math.round(totalDuration * 25)
-    
-    // Estimate CO2 saved (compared to gasoline car - roughly 2.3kg CO2 per liter)
-    const co2Saved = Math.round(estimatedKwh * 0.4 / 2.3) // 0.4kg CO2 per kWh vs gasoline
+    const co2Saved = estimatedKwh * 0.4 // Assuming 0.4kg CO2 saved per kWh
+    const avgCostPerSession = totalSessions > 0 ? totalCost / totalSessions : 0
 
     return {
-      totalCost: totalCost.toFixed(2),
+      totalCost,
       estimatedKwh,
       totalSessions,
       co2Saved,
-      avgCostPerSession: totalSessions > 0 ? (totalCost / totalSessions).toFixed(2) : '0.00'
+      avgCostPerSession
     }
   }
 
-  // Generate monthly data for the last 12 months
+  // Generate monthly data (fallback when using localStorage)
   const generateMonthlyData = () => {
-    const months: Array<{
-      month: string
-      fullMonth: string
-      cost: number
-      sessions: number
-      duration: number
-      kwh: number
-      height: number
-      reservations: Reservation[]
-    }> = []
+    if (!usingFallbackData && apiMonthlyStats.length > 0) {
+      return apiMonthlyStats
+    }
+
+    // Fallback generation from localStorage reservations
+    const monthlyData: MonthlyData[] = []
     const currentDate = new Date()
     
     for (let i = 11; i >= 0; i--) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
-      const month = date.getMonth()
-      const year = date.getFullYear()
+      const month = date.toISOString().slice(0, 7)
+      const fullMonth = date.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })
       
-      const monthReservations = reservations.filter(r => {
-        const reservationDate = new Date(r.timeSlot.start)
-        return reservationDate.getMonth() === month && 
-               reservationDate.getFullYear() === year &&
-               r.displayStatus !== 'cancelled'
+      const monthReservations = reservations.filter(reservation => {
+        const reservationDate = new Date(reservation.timeSlot.start)
+        return reservationDate.getMonth() === date.getMonth() && 
+               reservationDate.getFullYear() === date.getFullYear() &&
+               reservation.displayStatus !== 'cancelled'
       })
-      
-      const cost = monthReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0)
+
+      const cost = monthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
       const sessions = monthReservations.length
-      const totalDuration = monthReservations.reduce((sum, r) => {
-        const duration = (new Date(r.timeSlot.end).getTime() - new Date(r.timeSlot.start).getTime()) / (1000 * 60 * 60)
-        return sum + duration
+      const duration = monthReservations.reduce((sum, reservation) => {
+        return sum + (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
       }, 0)
-      
-      months.push({
-        month: date.toLocaleDateString('en-US', { month: 'short' }),
-        fullMonth: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      const kwh = duration * 22 // Assuming 22kW average
+
+      monthlyData.push({
+        month,
+        fullMonth,
         cost,
         sessions,
-        duration: totalDuration,
-        kwh: Math.round(totalDuration * 25),
-        height: Math.max(10, Math.min(90, (cost / 50) * 80)), // Better scaling
-        reservations: monthReservations
+        duration,
+        kwh,
+        reservations: monthReservations as any // Type assertion for compatibility
       })
     }
     
-    return months
+    return monthlyData
   }
 
-  // Generate weekly data for current month
+  // Generate weekly data (fallback when using localStorage)
   const generateWeeklyData = () => {
-    const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-    const currentMonth = new Date().getMonth()
-    const currentYear = new Date().getFullYear()
+    if (!usingFallbackData && apiWeeklyStats.length > 0) {
+      return apiWeeklyStats
+    }
+
+    // Fallback generation from localStorage reservations
+    const weeklyData: WeeklyData[] = []
+    const currentDate = new Date()
+    const currentMonth = currentDate.getMonth()
+    const currentYear = currentDate.getFullYear()
     
-    return weeks.map((week, index) => {
-      const startOfWeek = new Date(currentYear, currentMonth, (index * 7) + 1)
-      const endOfWeek = new Date(currentYear, currentMonth, (index + 1) * 7)
+    // Get first day of current month
+    const firstDay = new Date(currentYear, currentMonth, 1)
+    const lastDay = new Date(currentYear, currentMonth + 1, 0)
+    
+    // Generate weeks for current month
+    let weekStart = new Date(firstDay)
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // Start from Sunday
+    
+    let weekNumber = 1
+    while (weekStart <= lastDay) {
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 6)
       
-      const weekReservations = reservations.filter(r => {
-        const reservationDate = new Date(r.timeSlot.start)
-        return reservationDate >= startOfWeek && 
-               reservationDate <= endOfWeek &&
-               r.displayStatus !== 'cancelled'
+      const weekReservations = reservations.filter(reservation => {
+        const reservationDate = new Date(reservation.timeSlot.start)
+        return reservationDate >= weekStart && reservationDate <= weekEnd &&
+               reservation.displayStatus !== 'cancelled'
       })
-      
+
+      const cost = weekReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
       const sessions = weekReservations.length
-      const cost = weekReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0)
-      const height = Math.max(20, Math.min(85, sessions * 25)) // Better scaling
       
-      return {
-        week,
+      weeklyData.push({
+        week: `W${weekNumber}`,
         sessions,
         cost,
-        height,
-        dateRange: `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`,
-        reservations: weekReservations
-      }
-    })
+        dateRange: `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
+        reservations: weekReservations as any // Type assertion for compatibility
+      })
+      
+      weekStart.setDate(weekStart.getDate() + 7)
+      weekNumber++
+    }
+    
+    return weeklyData
   }
 
   // Handle month click
@@ -265,15 +339,44 @@ export default function DashboardPage() {
     }
   ]
 
+  // Show unauthorized error
+  if (isUnauthorized) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto">
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-6 text-center">
+                <FaExclamationTriangle className="mx-auto text-red-500 text-4xl mb-4" />
+                <h2 className="text-xl font-semibold text-red-800 mb-2">Acesso Negado</h2>
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Tentar Novamente
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="flex h-screen flex-col w-screen overflow-hidden">
-        <header>
-          <Navbar />
-        </header>
-        <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 items-center justify-center">
-          <div className="text-white text-lg">Loading dashboard...</div>
-        </main>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando dashboard...</p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
