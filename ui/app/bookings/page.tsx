@@ -112,10 +112,10 @@ export default function BookingsPage() {
                 <p className="text-gray-300 mt-2">Manage your charging station reservations</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={generateDemoData} className="text-white border-white">
+                <Button variant="outline" size="sm" onClick={generateDemoData} className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
                   Add Demo Data
                 </Button>
-                <Button variant="outline" size="sm" onClick={clearAllData} className="text-white border-white">
+                <Button variant="outline" size="sm" onClick={clearAllData} className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
                   Clear All
                 </Button>
               </div>
@@ -136,7 +136,7 @@ export default function BookingsPage() {
                   onClick={() => setFilter(tab.key as 'all' | 'upcoming' | 'completed' | 'cancelled')}
                   className={filter === tab.key ? 
                     "bg-[#FFA500] text-black" : 
-                    "text-white border-white hover:bg-white/10"
+                    "bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
                   }
                 >
                   <FaFilter className="mr-2 h-3 w-3" />
@@ -171,7 +171,7 @@ export default function BookingsPage() {
                         Book a Charging Session
                       </Button>
                     </Link>
-                    <Button variant="outline" onClick={generateDemoData} className="text-white border-white">
+                    <Button variant="outline" onClick={generateDemoData} className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
                       Add Demo Data
                     </Button>
                   </div>
@@ -248,7 +248,7 @@ export default function BookingsPage() {
                           )}
                           
                           <Link href={`/stations/${reservation.stationId}`}>
-                            <Button variant="outline" size="sm" className="text-white border-white">
+                            <Button variant="outline" size="sm" className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
                               <FaMapPin className="h-3 w-3 mr-1" />
                               View Station
                             </Button>
@@ -274,13 +274,13 @@ export default function BookingsPage() {
                       </Button>
                     </Link>
                     <Link href="/map">
-                      <Button variant="outline" className="text-white border-white">
+                      <Button variant="outline" className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
                         <FaMapPin className="mr-2 h-4 w-4" />
                         Find Stations
                       </Button>
                     </Link>
                     <Link href="/history">
-                      <Button variant="outline" className="text-white border-white">
+                      <Button variant="outline" className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
                         <FaClock className="mr-2 h-4 w-4" />
                         View History
                       </Button>
