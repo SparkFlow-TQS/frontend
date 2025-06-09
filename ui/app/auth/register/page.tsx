@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useAuth } from '@/lib/auth-context'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -243,3 +243,6 @@ export default function RegisterPage() {
     </div>
   )
 }
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'

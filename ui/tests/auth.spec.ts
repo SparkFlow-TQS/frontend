@@ -5,7 +5,7 @@ test.describe('Authentication', () => {
     await page.goto('/login')
     
     // Check page elements
-    await expect(page.locator('text=SparkFlow')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'SparkFlow' })).toBeVisible()
     await expect(page.locator('text=Welcome Back')).toBeVisible()
     await expect(page.getByPlaceholder('Enter your email or username')).toBeVisible()
     await expect(page.getByPlaceholder('Enter your password')).toBeVisible()
@@ -17,7 +17,7 @@ test.describe('Authentication', () => {
     await page.goto('/register')
     
     // Check page elements
-    await expect(page.locator('text=SparkFlow')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'SparkFlow' })).toBeVisible()
     await expect(page.locator('text=Get Started')).toBeVisible()
     await expect(page.getByPlaceholder('Choose a username')).toBeVisible()
     await expect(page.getByPlaceholder('Enter your email')).toBeVisible()
