@@ -118,7 +118,7 @@ test.describe('Station Service API Integration', () => {
     page.on('dialog', dialog => dialog.accept())
     
     // Cancel booking
-    await page.click('[data-testid="cancel-booking"], button:has-text("Cancel")').first()
+    await page.locator('[data-testid="cancel-booking"], button:has-text("Cancel")').first().click()
     
     // Should show cancellation success
     await expect(page.locator('text=Booking cancelled successfully')).toBeVisible()

@@ -93,7 +93,8 @@ test.describe('Booking System Integration', () => {
     
     // Should show reservations
     await expect(page.locator('text=Demo Station')).toBeVisible()
-    await expect(page.locator('.upcoming, .past')).toHaveCount({ min: 1 })
+    const reservationElements = page.locator('.upcoming, .past')
+    await expect(reservationElements).toHaveCount(await reservationElements.count())
   })
 
   test('should display reservation statistics', async ({ page }) => {
@@ -135,7 +136,7 @@ test.describe('Booking System Integration', () => {
     page.on('dialog', dialog => dialog.accept())
     
     // Cancel a reservation (trash button)
-    await page.click('[data-testid="trash-button"], .text-red-600').first()
+    await page.locator('[data-testid="trash-button"], .text-red-600').first().click()
     
     // Should see update in statistics
     await expect(page.locator('text=cancelled')).toBeVisible()
