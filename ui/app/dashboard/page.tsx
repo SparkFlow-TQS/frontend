@@ -678,6 +678,12 @@ export default function DashboardPage() {
                           fill="#FFA500"
                           className="cursor-pointer hover:fill-[#14213d] transition-colors duration-200"
                           onClick={() => handleMonthClick(data)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              handleMonthClick(data)
+                            }
+                          }}
                           onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (monthlyData.indexOf(data) - 3) * 50, y: 150 - (data.height ?? 50) })}
                           onMouseLeave={() => setHoveredData(null)}
                           role="button"
