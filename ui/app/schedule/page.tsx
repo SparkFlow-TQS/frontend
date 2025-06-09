@@ -14,7 +14,6 @@ import ProtectedRoute from "@/components/ProtectedRoute"
 import { type ChargingStation } from "@/types"
 import { StationAPI } from "@/lib/api"
 import { ReservationManager } from "@/lib/reservations"
-import ProtectedRoute from "@/components/ProtectedRoute"
 
 function SchedulePageContent() {
     const [date, setDate] = useState<Date | undefined>(new Date())
