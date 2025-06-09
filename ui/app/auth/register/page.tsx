@@ -16,6 +16,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    operator: false,
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -82,6 +83,7 @@ export default function RegisterPage() {
         username: formData.username.trim(),
         email: formData.email.trim(),
         password: formData.password,
+        operator: formData.operator,
       })
       router.push('/')
     } catch (err: unknown) {

@@ -2,6 +2,16 @@
  * Authentication-related type definitions
  */
 
+export interface User {
+  id: string
+  username: string
+  email: string
+  isOperator: boolean
+  operator?: boolean // For backward compatibility
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface LoginRequest {
   emailOrUsername: string
   password: string
@@ -21,17 +31,11 @@ export interface AuthResponse {
   username: string
   email: string
   isOperator: boolean
+  user?: User // For backward compatibility
 }
 
 export interface RefreshTokenRequest {
   refreshToken: string
-}
-
-export interface User {
-  id: string
-  username: string
-  email: string
-  isOperator: boolean
 }
 
 export interface AuthContextType {
@@ -42,4 +46,19 @@ export interface AuthContextType {
   register: (userData: RegisterRequest) => Promise<void>
   logout: () => void
   refreshToken: () => Promise<void>
+  isOperator: () => boolean
 }
+
+export interface AuthError {
+  message: string
+  status?: number
+  field?: string
+}
+
+export interface TokenData {
+  accessToken: string
+  refreshToken: string
+  expiresAt: number
+}
+
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
