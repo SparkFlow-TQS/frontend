@@ -360,36 +360,29 @@ export default function DashboardPage() {
     return currentMonthCost > previousMonthCost ? '+' : ''
   }
 
-  // Helper function to get chart bar styling
-  const getMonthChartBarStyle = (isSelected: boolean): string => {
-    if (isSelected) {
-      return 'bg-[#14213d] ring-2 ring-[#FFA500]'
-    }
-    return 'bg-[#FFA500] hover:bg-[#FFA500]/90'
+  // Generic helper function for chart styling
+  const getChartElementStyle = (
+    isSelected: boolean, 
+    selectedStyle: string, 
+    defaultStyle: string
+  ): string => {
+    return isSelected ? selectedStyle : defaultStyle
   }
 
-  // Helper function to get month label styling
-  const getMonthLabelStyle = (isSelected: boolean): string => {
-    if (isSelected) {
-      return 'text-[#FFA500] font-bold'
+  // Chart styling configurations
+  const chartStyles = {
+    monthBar: {
+      selected: 'bg-[#14213d] ring-2 ring-[#FFA500]',
+      default: 'bg-[#FFA500] hover:bg-[#FFA500]/90'
+    },
+    weekBar: {
+      selected: 'bg-[#FFA500] ring-2 ring-[#14213d]',
+      default: 'bg-[#14213d] hover:bg-[#14213d]/90'
+    },
+    label: {
+      selected: 'text-[#FFA500] font-bold',
+      default: 'hover:text-[#FFA500]'
     }
-    return 'hover:text-[#FFA500]'
-  }
-
-  // Helper function to get week chart bar styling
-  const getWeekChartBarStyle = (isSelected: boolean): string => {
-    if (isSelected) {
-      return 'bg-[#FFA500] ring-2 ring-[#14213d]'
-    }
-    return 'bg-[#14213d] hover:bg-[#14213d]/90'
-  }
-
-  // Helper function to get week label styling
-  const getWeekLabelStyle = (isSelected: boolean): string => {
-    if (isSelected) {
-      return 'text-[#FFA500] font-bold'
-    }
-    return 'hover:text-[#FFA500]'
   }
 
   // Helper function to get selected period title
@@ -578,7 +571,7 @@ export default function DashboardPage() {
                     {monthlyData.map((data) => (
                       <button 
                         key={data.month} 
-                        className={`rounded-t cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${getMonthChartBarStyle(selectedMonth === data.month)}`}
+                        className={`rounded-t cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${getChartElementStyle(selectedMonth === data.month, chartStyles.monthBar.selected, chartStyles.monthBar.default)}`}
                         style={{ 
                           width: '24px',
                           height: `${data.height}%` 
@@ -595,7 +588,7 @@ export default function DashboardPage() {
                     {monthlyData.map((data) => (
                       <button 
                         key={`label-${data.month}`}
-                        className={`cursor-pointer transition-colors border-0 bg-transparent p-0 ${getMonthLabelStyle(selectedMonth === data.month)}`}
+                        className={`cursor-pointer transition-colors border-0 bg-transparent p-0 ${getChartElementStyle(selectedMonth === data.month, chartStyles.label.selected, chartStyles.label.default)}`}
                         onClick={() => handleMonthClick(data)}
                         aria-label={`Select ${data.month}`}
                       >
@@ -631,7 +624,7 @@ export default function DashboardPage() {
                     {weeklyData.map((data) => (
                       <div key={data.week} className="flex flex-col items-center">
                         <button 
-                          className={`w-12 rounded-sm cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${getWeekChartBarStyle(selectedWeek === data.week)}`}
+                          className={`w-12 rounded-sm cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${getChartElementStyle(selectedWeek === data.week, chartStyles.weekBar.selected, chartStyles.weekBar.default)}`}
                           style={{ height: `${data.height}%` }}
                           onClick={() => handleWeekClick(data)}
                           onMouseEnter={() => setHoveredData({ type: 'week', data })}
@@ -640,7 +633,7 @@ export default function DashboardPage() {
                           title={`${data.week}: ${data.sessions} sessions, €${data.cost.toFixed(2)}`}
                         />
                         <button 
-                          className={`mt-2 text-gray-500 cursor-pointer text-xs transition-colors border-0 bg-transparent p-0 ${getWeekLabelStyle(selectedWeek === data.week)}`}
+                          className={`mt-2 text-gray-500 cursor-pointer text-xs transition-colors border-0 bg-transparent p-0 ${getChartElementStyle(selectedWeek === data.week, chartStyles.label.selected, chartStyles.label.default)}`}
                           onClick={() => handleWeekClick(data)}
                           aria-label={`Select ${data.week}`}
                         >
