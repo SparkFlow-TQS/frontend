@@ -33,11 +33,18 @@ jobs:
       working-directory: frontend/ui
       run: npx playwright install chromium --with-deps
     
-    - name: Run essential Playwright tests
-      working-directory: frontend/ui
+    - name: Run essential Playwright tests (CI optimized)
+      working-directory: frontend/ui  
       run: npm run test:ci
       env:
         CI: true
+        
+    # Alternative: Use stable tests if CI tests have issues
+    # - name: Run stable Playwright tests
+    #   working-directory: frontend/ui
+    #   run: npm run test:stable
+    #   env:
+    #     CI: true
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
