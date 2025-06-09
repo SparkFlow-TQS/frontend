@@ -150,7 +150,11 @@ export default function DashboardPage() {
     // Listen for custom events from other components
     const handleReservationUpdate = () => {
       if (usingFallbackData) {
+        // Force reload to ensure latest data after reservation changes
         loadReservationsFromStorage()
+        // Trigger a re-calculation of statistics to reflect changes
+        setLoading(true)
+        setTimeout(() => setLoading(false), 100) // Brief loading state to show update
       }
     }
 
@@ -186,7 +190,7 @@ export default function DashboardPage() {
              reservation.displayStatus !== 'cancelled'
     })
 
-    const totalCost = currentMonthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+    const totalCost = currentMonthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost ?? 0), 0)
     const totalSessions = currentMonthReservations.length
     const estimatedKwh = currentMonthReservations.reduce((sum, reservation) => {
       const duration = (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
@@ -231,7 +235,7 @@ export default function DashboardPage() {
                reservation.displayStatus !== 'cancelled'
       })
 
-      const cost = monthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+      const cost = monthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost ?? 0), 0)
       const sessions = monthReservations.length
       const duration = monthReservations.reduce((sum, reservation) => {
         return sum + (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
@@ -293,7 +297,7 @@ export default function DashboardPage() {
                reservation.displayStatus !== 'cancelled'
       })
 
-      const cost = weekReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+      const cost = weekReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost ?? 0), 0)
       const sessions = weekReservations.length
       
       weeklyData.push({
@@ -332,11 +336,11 @@ export default function DashboardPage() {
   const getFilteredReservations = (): Reservation[] => {
     if (selectedMonth) {
       const monthData = monthlyData.find(m => m.month === selectedMonth)
-      return monthData?.reservations.map(bookingDTOToReservation) || []
+      return monthData?.reservations.map(bookingDTOToReservation) ?? []
     }
     if (selectedWeek) {
       const weekData = weeklyData.find(w => w.week === selectedWeek)
-      return weekData?.reservations.map(bookingDTOToReservation) || []
+      return weekData?.reservations.map(bookingDTOToReservation) ?? []
     }
     return []
   }
@@ -346,14 +350,23 @@ export default function DashboardPage() {
   const weeklyData = generateWeeklyData()
   const filteredReservations = getFilteredReservations()
 
+  // Helper function to calculate cost change indicator
+  const getCostChangeIndicator = (): string => {
+    if (monthlyData.length <= 1) return '+'
+    
+    const currentMonthCost = monthlyData[11]?.cost ?? 0
+    const previousMonthCost = monthlyData[10]?.cost ?? 0
+    
+    return currentMonthCost > previousMonthCost ? '+' : ''
+  }
+
   const stats = [
     {
       title: "This month's costs",
       value: `€${monthlyStats.totalCost}`,
       icon: <FaDollarSign className="h-5 w-5 text-white" />,
       detail: `Avg per session: €${monthlyStats.avgCostPerSession}`,
-      change: monthlyData.length > 1 ? 
-        ((monthlyData[11]?.cost || 0) - (monthlyData[10]?.cost || 0)) > 0 ? '+' : '' : '+'
+      change: getCostChangeIndicator()
     },
     {
       title: "This month's kWh",
@@ -446,8 +459,8 @@ export default function DashboardPage() {
       <main className="p-8 h-full flex flex-row items-start bg-[#14213d] text-[#FCA311] overflow-y-auto">
         {/* Sidebar Navigation */}
         <div className="align-middle p-10 justify-center flex flex-col items-center w-1/4 text-center sticky top-0">
-            {sidebarItems.map((items, index) => (
-              <Link key={index} href={items.href} className="w-full">
+            {sidebarItems.map((items) => (
+              <Link key={items.href} href={items.href} className="w-full">
                 <Card className="bg-[#FFA500] cursor-pointer hover:bg-[#FFA500]/90 transition-colors mb-4">
                   <CardContent className="p-4">
                     <h2 className="text-xl font-bold text-[#14213d]">{items.title}</h2>
@@ -459,11 +472,11 @@ export default function DashboardPage() {
         <div className="w-full px-10 max-h-full overflow-y-auto">
           {/* Interactive Stats Cards */}
           <div className="flex flex-row gap-4 mb-4 align-middle justify-center">
-            {stats.map((stat, index) => (
+            {stats.map((stat) => (
               <Card 
-                key={index} 
+                key={stat.title} 
                 className="bg-white rounded-lg shadow-md overflow-hidden w-1/4 flex align-middle hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
-                onMouseEnter={() => setHoveredData({ type: 'stat', index, data: stat })}
+                onMouseEnter={() => setHoveredData({ type: 'stat', data: stat })}
                 onMouseLeave={() => setHoveredData(null)}
               >
                 <CardContent className="flex flex-col relative">
@@ -476,7 +489,7 @@ export default function DashboardPage() {
                           <span className="ml-2 text-sm text-green-500">{stat.change}23%</span>
                         )}
                       </div>
-                      {hoveredData?.type === 'stat' && hoveredData?.index === index && (
+                      {hoveredData?.type === 'stat' && hoveredData?.data?.title === stat.title && (
                         <p className="text-xs text-gray-500 mt-1 animate-fade-in">
                           {stat.detail}
                         </p>
@@ -518,10 +531,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="h-48 relative">
                   <div className="w-full h-full flex items-end justify-between px-4">
-                    {monthlyData.map((data, index) => (
-                      <div 
-                        key={index} 
-                        className={`rounded-t cursor-pointer transition-all duration-200 hover:opacity-80 ${
+                    {monthlyData.map((data) => (
+                      <button 
+                        key={data.month} 
+                        className={`rounded-t cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${
                           selectedMonth === data.month ? 'bg-[#14213d] ring-2 ring-[#FFA500]' : 'bg-[#FFA500] hover:bg-[#FFA500]/90'
                         }`}
                         style={{ 
@@ -529,23 +542,25 @@ export default function DashboardPage() {
                           height: `${data.height}%` 
                         }}
                         onClick={() => handleMonthClick(data)}
+                        aria-label={`${data.fullMonth}: €${data.cost.toFixed(2)} (${data.sessions} sessions)`}
                         onMouseEnter={() => setHoveredData({ type: 'month', data })}
                         onMouseLeave={() => setHoveredData(null)}
                         title={`${data.fullMonth}: €${data.cost.toFixed(2)} (${data.sessions} sessions)`}
-                      />
+                      ></button>
                     ))}
                   </div>
                   <div className="w-full flex justify-between mt-2 text-xs text-gray-500">
-                    {monthlyData.map((data, index) => (
-                      <span 
-                        key={index}
-                        className={`cursor-pointer transition-colors ${
+                    {monthlyData.map((data) => (
+                      <button 
+                        key={`label-${data.month}`}
+                        className={`cursor-pointer transition-colors border-0 bg-transparent p-0 ${
                           selectedMonth === data.month ? 'text-[#FFA500] font-bold' : 'hover:text-[#FFA500]'
                         }`}
                         onClick={() => handleMonthClick(data)}
+                        aria-label={`Select ${data.month}`}
                       >
                         {data.month}
-                      </span>
+                      </button>
                     ))}
                   </div>
                   
@@ -573,26 +588,28 @@ export default function DashboardPage() {
                 </div>
                 <div className="h-48 relative">
                   <div className="w-full h-[80%] flex items-end justify-around">
-                    {weeklyData.map((data, index) => (
-                      <div key={index} className="flex flex-col items-center">
-                        <div 
-                          className={`w-12 rounded-sm cursor-pointer transition-all duration-200 hover:opacity-80 ${
+                    {weeklyData.map((data) => (
+                      <div key={data.week} className="flex flex-col items-center">
+                        <button 
+                          className={`w-12 rounded-sm cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${
                             selectedWeek === data.week ? 'bg-[#FFA500] ring-2 ring-[#14213d]' : 'bg-[#14213d] hover:bg-[#14213d]/90'
                           }`}
                           style={{ height: `${data.height}%` }}
                           onClick={() => handleWeekClick(data)}
                           onMouseEnter={() => setHoveredData({ type: 'week', data })}
                           onMouseLeave={() => setHoveredData(null)}
+                          aria-label={`${data.week}: ${data.sessions} sessions, €${data.cost.toFixed(2)}`}
                           title={`${data.week}: ${data.sessions} sessions, €${data.cost.toFixed(2)}`}
                         />
-                        <span 
-                          className={`mt-2 text-gray-500 cursor-pointer text-xs transition-colors ${
+                        <button 
+                          className={`mt-2 text-gray-500 cursor-pointer text-xs transition-colors border-0 bg-transparent p-0 ${
                             selectedWeek === data.week ? 'text-[#FFA500] font-bold' : 'hover:text-[#FFA500]'
                           }`}
                           onClick={() => handleWeekClick(data)}
+                          aria-label={`Select ${data.week}`}
                         >
-                          W{index + 1}
-                        </span>
+                          {data.week}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -628,17 +645,20 @@ export default function DashboardPage() {
                         className="hover:stroke-[#14213d] transition-colors duration-200"
                       />
                       {/* Interactive Points */}
-                      {monthlyData.slice(4).map((data, index) => (
+                      {monthlyData.slice(4).map((data) => (
                         <circle
-                          key={index}
-                          cx={(index + 1) * 50}
+                          key={data.month}
+                          cx={(monthlyData.indexOf(data) - 3) * 50}
                           cy={150 - (data.height || 50)}
                           r="6"
                           fill="#FFA500"
                           className="cursor-pointer hover:fill-[#14213d] transition-colors duration-200"
                           onClick={() => handleMonthClick(data)}
-                          onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (index + 1) * 50, y: 150 - (data.height || 50) })}
+                          onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (monthlyData.indexOf(data) - 3) * 50, y: 150 - (data.height || 50) })}
                           onMouseLeave={() => setHoveredData(null)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${data.month}: €${(data.cost || 0).toFixed(2)}`}
                         />
                       ))}
                       
@@ -677,14 +697,15 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div className="w-full flex justify-between text-xs text-gray-500">
-                    {monthlyData.slice(4).map((data, index) => (
-                      <span 
-                        key={index}
-                        className="cursor-pointer hover:text-[#FFA500] transition-colors"
+                    {monthlyData.slice(4).map((data) => (
+                      <button 
+                        key={`trend-label-${data.month}`}
+                        className="cursor-pointer hover:text-[#FFA500] transition-colors border-0 bg-transparent p-0"
                         onClick={() => handleMonthClick(data)}
+                        aria-label={`Select ${data.month}`}
                       >
                         {data.month}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -718,13 +739,13 @@ export default function DashboardPage() {
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Total Cost</p>
                     <p className="text-xl font-bold text-blue-700">
-                      €{filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0).toFixed(2)}
+                      €{filteredReservations.reduce((sum, r) => sum + (r.estimatedCost ?? 0), 0).toFixed(2)}
                     </p>
                   </div>
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Avg Cost per Session</p>
                     <p className="text-xl font-bold text-blue-700">
-                      €{(filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0) / filteredReservations.length).toFixed(2)}
+                      €{(filteredReservations.reduce((sum, r) => sum + (r.estimatedCost ?? 0), 0) / filteredReservations.length).toFixed(2)}
                     </p>
                   </div>
                 </div>
