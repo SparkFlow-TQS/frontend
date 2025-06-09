@@ -4,7 +4,7 @@
 
 import { LoginRequest, RegisterRequest, AuthResponse, RefreshTokenRequest, User } from '@/types/auth'
 
-const USER_SERVICE_BASE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:8081'
+const USER_SERVICE_BASE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost/user'
 const TOKEN_STORAGE_KEY = 'sparkflow_access_token'
 const REFRESH_TOKEN_STORAGE_KEY = 'sparkflow_refresh_token'
 const USER_STORAGE_KEY = 'sparkflow_user'
@@ -49,21 +49,21 @@ class AuthAPI {
   }
 
   static async login(credentials: LoginRequest): Promise<AuthResponse> {
-    return this.makeRequest<AuthResponse>('/auth/login', {
+    return this.makeRequest<AuthResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
   }
 
   static async register(userData: RegisterRequest): Promise<User> {
-    return this.makeRequest<User>('/auth/register', {
+    return this.makeRequest<User>('/api/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
   }
 
   static async refreshToken(refreshTokenRequest: RefreshTokenRequest): Promise<AuthResponse> {
-    return this.makeRequest<AuthResponse>('/auth/refresh', {
+    return this.makeRequest<AuthResponse>('/api/v1/auth/refresh', {
       method: 'POST',
       body: JSON.stringify(refreshTokenRequest),
     })
@@ -75,7 +75,7 @@ class AuthAPI {
       throw new Error('No authentication token found')
     }
 
-    return this.makeRequest<User>('/users/me', {
+    return this.makeRequest<User>('/api/v1/users/profile', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
