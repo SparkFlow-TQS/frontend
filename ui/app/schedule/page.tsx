@@ -413,17 +413,17 @@ function SchedulePageContent() {
                                                     onMouseDown={(e) => e.preventDefault()} // Prevent blur
                                                     onClick={() => handleAutocompleteSelect(result)}
                                                     onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                                                    aria-label={`Select station ${result.externalId || result.id} - ${result.name}`}
+                                                    aria-label={`Select station ${result.externalId ?? result.id} - ${result.name}`}
                                                 >
                                                     <div className="text-black">
                                                         <div className="font-medium text-sm">
-                                                            {result.externalId || result.id} - {result.name}
+                                                            {result.externalId ?? result.id} - {result.name}
                                                         </div>
                                                         <div className="text-xs text-gray-600">
                                                             {result.address}
                                                         </div>
                                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                                                            <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
+                                                            <span>{result.power ?? 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                             <span className={`px-1 py-0.5 rounded text-xs ${
                                                                 result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                             }`}>
@@ -456,17 +456,17 @@ function SchedulePageContent() {
                                             key={result.id}
                                             className="w-full text-left bg-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-colors border-0"
                                             onClick={() => handleSelectStation(result)}
-                                            aria-label={`Select station ${result.externalId || result.id} - ${result.name}`}
+                                            aria-label={`Select station ${result.externalId ?? result.id} - ${result.name}`}
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-1">
                                                     <h4 className="font-semibold text-lg">
-                                                        {result.externalId || result.id} - {result.name}
+                                                        {result.externalId ?? result.id} - {result.name}
                                                     </h4>
                                                     <p className="text-sm opacity-90">{result.address}</p>
                                                     <p className="text-sm opacity-90">{result.city}, {result.country}</p>
                                                     <div className="flex items-center gap-4 mt-2 text-sm">
-                                                        <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
+                                                        <span>{result.power ?? 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                         <span className={`px-2 py-1 rounded text-xs ${
                                                             result.isOperational ? 'bg-green-600' : 'bg-red-600'
                                                         }`}>
@@ -530,11 +530,11 @@ function SchedulePageContent() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h2 className="text-2xl font-semibold text-[#FFA500]">
-                                        {station.externalId || station.id} - {station.name}
+                                        {station.externalId ?? station.id} - {station.name}
                                     </h2>
                                     <p className="text-lg mt-1">{station.city} • {station.address}</p>
                                     <div className="flex items-center gap-4 mt-2">
-                                        <span className="text-sm">{station.power || 'N/A'} kW</span>
+                                        <span className="text-sm">{station.power ?? 'N/A'} kW</span>
                                         <span className="text-sm">{station.quantityOfChargers} {station.quantityOfChargers === 1 ? 'charger' : 'chargers'} available</span>
                                         <span className={`px-2 py-1 rounded text-xs ${
                                             station.isOperational ? 'bg-green-600' : 'bg-red-600'
