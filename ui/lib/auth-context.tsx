@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
 import { AuthAPI, AuthError } from './auth-api'
 import { 
   User, 
@@ -155,7 +155,7 @@ const calculateTokenExpiration = (accessToken: string): number => {
     if (payload.exp) {
       return payload.exp * 1000 // Convert to milliseconds
     }
-  } catch (error) {
+  } catch {
     console.warn('Could not decode JWT token, using default expiration')
   }
   // Default to 50 minutes from now
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               tokens: storedTokens,
             },
           })
-        } catch (error) {
+        } catch {
           console.warn('Stored token is invalid, attempting refresh...')
           
           // Try to refresh token
@@ -209,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 tokens: newTokens,
               },
             })
-          } catch (refreshError) {
+          } catch {
             console.warn('Token refresh failed, logging out')
             clearStoredData()
             dispatch({ type: 'AUTH_LOGOUT' })
@@ -242,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => clearTimeout(timeout)
       }
     }
-  }, [state.tokens])
+  }, [state.tokens, refreshToken, state.status])
 
   const login = async (credentials: LoginRequest): Promise<void> => {
     dispatch({ type: 'AUTH_LOADING' })
@@ -307,7 +307,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'AUTH_LOGOUT' })
   }
 
-  const refreshToken = async (): Promise<void> => {
+  const refreshToken = useCallback(async (): Promise<void> => {
     if (!state.tokens?.refreshToken) {
       throw new Error('No refresh token available')
     }
@@ -332,7 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout()
       throw error
     }
-  }
+  }, [state.tokens?.refreshToken])
 
   const isOperator = (): boolean => {
     return state.user?.operator ?? false
@@ -371,7 +371,7 @@ export function withAuth<P extends object>(
   options: { requireOperator?: boolean } = {}
 ) {
   return function AuthenticatedComponent(props: P) {
-    const { isAuthenticated, isLoading, user, isOperator } = useAuth()
+    const { isAuthenticated, isLoading, isOperator } = useAuth()
 
     if (isLoading) {
       return (

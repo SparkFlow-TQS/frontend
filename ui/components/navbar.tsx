@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from "next/link";
-import { IoMdExit, IoMdPerson, IoMdSettings } from "react-icons/io";
+import { IoMdExit, IoMdPerson } from "react-icons/io";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";

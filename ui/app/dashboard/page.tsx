@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle, FaEuroSign, FaChargingStation, FaExclamationTriangle } from "react-icons/fa"
+import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle, FaExclamationTriangle } from "react-icons/fa"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
 import { Reservation } from "@/types"
-import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, CostTrendData, BookingDTO } from "@/lib/api"
+import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, BookingDTO } from "@/lib/api"
 import ProtectedRoute from "@/components/ProtectedRoute"
 
 interface HoveredData {
@@ -23,7 +23,7 @@ interface HoveredData {
     duration?: number
     kwh?: number
     height?: number
-    reservations?: any[]
+    reservations?: BookingDTO[]
     week?: string
     dateRange?: string
     title?: string
@@ -42,13 +42,11 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [hoveredData, setHoveredData] = useState<HoveredData | null>(null)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   // API Statistics state
   const [currentMonthStats, setCurrentMonthStats] = useState<CurrentMonthStats | null>(null)
   const [apiMonthlyStats, setApiMonthlyStats] = useState<MonthlyData[]>([])
   const [apiWeeklyStats, setApiWeeklyStats] = useState<WeeklyData[]>([])
-  const [costTrend, setCostTrend] = useState<CostTrendData[]>([])
   const [usingFallbackData, setUsingFallbackData] = useState(false)
 
   useEffect(() => {
@@ -59,24 +57,23 @@ export default function DashboardPage() {
       
       try {
         // Try to load statistics from API
-        const [currentStats, monthlyData, weeklyData, trendData] = await Promise.all([
+        const [currentStats, monthlyData, weeklyData] = await Promise.all([
           StatisticsAPI.getCurrentMonthStats(),
           StatisticsAPI.getMonthlyStats(12),
-          StatisticsAPI.getWeeklyCurrentMonthStats(),
-          StatisticsAPI.getCostTrend(8)
+          StatisticsAPI.getWeeklyCurrentMonthStats()
         ])
         
         setCurrentMonthStats(currentStats)
         setApiMonthlyStats(monthlyData)
         setApiWeeklyStats(weeklyData)
-        setCostTrend(trendData)
         setUsingFallbackData(false)
         
-      } catch (apiError: any) {
+      } catch (apiError: unknown) {
+        const error = apiError as { message?: string; status?: number }
         console.error('Error loading statistics from API:', apiError)
         
         // Check if it's a 403 unauthorized error
-        if (apiError.message?.includes('403') || apiError.status === 403) {
+        if (error.message?.includes('403') || error.status === 403) {
           setIsUnauthorized(true)
           setError('Acesso negado. Você precisa estar autenticado para visualizar as estatísticas.')
           setLoading(false)
@@ -256,7 +253,7 @@ export default function DashboardPage() {
     const lastDay = new Date(currentYear, currentMonth + 1, 0)
     
     // Generate weeks for current month
-    let weekStart = new Date(firstDay)
+    const weekStart = new Date(firstDay)
     weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // Start from Sunday
     
     let weekNumber = 1
@@ -307,13 +304,13 @@ export default function DashboardPage() {
   }
 
   // Handle month click
-  const handleMonthClick = (monthData: { month: string; cost: number; sessions: number; reservations: any }) => {
+  const handleMonthClick = (monthData: { month: string; cost: number; sessions: number; reservations: BookingDTO[] }) => {
     setSelectedMonth(selectedMonth === monthData.month ? null : monthData.month)
     setSelectedWeek(null)
   }
 
   // Handle week click
-  const handleWeekClick = (weekData: { week: string; sessions: number; cost: number; reservations: any }) => {
+  const handleWeekClick = (weekData: { week: string; sessions: number; cost: number; reservations: BookingDTO[] }) => {
     setSelectedWeek(selectedWeek === weekData.week ? null : weekData.week)
     setSelectedMonth(null)
   }

@@ -46,8 +46,9 @@ export default function LoginPage() {
     try {
       await login(formData)
       router.push('/')
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
