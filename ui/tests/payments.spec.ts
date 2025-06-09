@@ -273,7 +273,7 @@ test.describe('Payments Page', () => {
     // Mock empty transactions
     await page.addInitScript(() => {
       // Override the demo data loading to return empty arrays
-      window.mockEmptyData = true
+      (window as any).mockEmptyData = true
     })
     
     await page.goto('/payments')

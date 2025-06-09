@@ -4,23 +4,19 @@ test.describe('Profile Page', () => {
   test.beforeEach(async ({ page }) => {
     // Mock authentication with user data
     await page.addInitScript(() => {
-      localStorage.setItem('auth-token', 'mock-jwt-token')
-      localStorage.setItem('user', JSON.stringify({
-        id: '1',
-        username: 'testuser',
-        email: 'test@example.com',
-        role: 'DRIVER',
-        isOperator: false
-      }))
-      
-      // Mock AuthContext
-      window.mockUser = {
+      const mockUserData = {
         id: '1',
         username: 'testuser',
         email: 'test@example.com',
         role: 'DRIVER',
         isOperator: false
       }
+      
+      localStorage.setItem('auth-token', 'mock-jwt-token')
+      localStorage.setItem('user', JSON.stringify(mockUserData))
+      
+      // Mock AuthContext
+      ;(window as any).mockUser = mockUserData
     })
   })
 
@@ -45,8 +41,8 @@ test.describe('Profile Page', () => {
     await page.goto('/profile')
     
     // Check that user data is displayed
-    await expect(page.getByDisplayValue('testuser')).toBeVisible()
-    await expect(page.getByDisplayValue('test@example.com')).toBeVisible()
+    await expect(page.locator('input[value="testuser"]')).toBeVisible()
+    await expect(page.locator('input[value="test@example.com"]')).toBeVisible()
     
     // Check account type badge for driver
     await expect(page.locator('text=Driver')).toBeVisible()
@@ -59,7 +55,7 @@ test.describe('Profile Page', () => {
   test('should display operator badge for operator users', async ({ page }) => {
     // Override user data to be an operator
     await page.addInitScript(() => {
-      window.mockUser = {
+      (window as any).mockUser = {
         id: '1',
         username: 'operatoruser',
         email: 'operator@example.com',
@@ -139,8 +135,8 @@ test.describe('Profile Page', () => {
     await expect(page.getByRole('button', { name: 'Edit Profile' })).toBeVisible()
     
     // Changes should be reverted
-    await expect(page.getByDisplayValue('testuser')).toBeVisible()
-    await expect(page.getByDisplayValue('changedusername')).not.toBeVisible()
+    await expect(page.locator('input[value="testuser"]')).toBeVisible()
+    await expect(page.locator('input[value="changedusername"]')).not.toBeVisible()
   })
 
   test('should validate password change', async ({ page }) => {
@@ -278,7 +274,7 @@ test.describe('Profile Page', () => {
     await page.addInitScript(() => {
       localStorage.removeItem('auth-token')
       localStorage.removeItem('user')
-      window.mockUser = null
+      ;(window as any).mockUser = null
     })
     
     await page.goto('/profile')
