@@ -49,6 +49,12 @@ export default function Navbar() {
 
     const navLinks = isAuthenticated ? authenticatedNavLinks : unauthenticatedNavLinks;
 
+    const navLinks = isAuthenticated ? authenticatedNavLinks : unauthenticatedNavLinks;
+
+    const handleLogout = () => {
+        logout();
+    };
+
     return (
         <div className="sticky w-full bg-[#FCA311] text-[#14213D] px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">

@@ -14,6 +14,7 @@ import ProtectedRoute from "@/components/ProtectedRoute"
 import { type ChargingStation } from "@/types"
 import { StationAPI } from "@/lib/api"
 import { ReservationManager } from "@/lib/reservations"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 function SchedulePageContent() {
     const [date, setDate] = useState<Date | undefined>(new Date())
@@ -745,18 +746,20 @@ function SchedulePageContent() {
 
 export default function SchedulePage() {
     return (
-        <Suspense fallback={
-            <div className="flex h-screen flex-col w-screen overflow-hidden">
-                <header>
-                    <Navbar />
-                </header>
-                <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 items-center justify-center">
-                    <div className="text-white text-lg">Loading...</div>
-                </main>
-            </div>
-        }>
-            <SchedulePageContent />
-        </Suspense>
+        <ProtectedRoute>
+            <Suspense fallback={
+                <div className="flex h-screen flex-col w-screen overflow-hidden">
+                    <header>
+                        <Navbar />
+                    </header>
+                    <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 items-center justify-center">
+                        <div className="text-white text-lg">Loading...</div>
+                    </main>
+                </div>
+            }>
+                <SchedulePageContent />
+            </Suspense>
+        </ProtectedRoute>
     )
 }
 

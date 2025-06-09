@@ -131,6 +131,7 @@ export interface MonthlyData {
   sessions: number
   duration: number
   kwh: number
+  height?: number
   reservations: BookingDTO[]
 }
 
@@ -139,6 +140,7 @@ export interface WeeklyData {
   sessions: number
   cost: number
   dateRange: string
+  height?: number
   reservations: BookingDTO[]
 }
 
@@ -165,6 +167,15 @@ export interface BookingDTO {
   endTime: string
   cost: number
   status: string
+  // Compatibility fields for dashboard
+  stationName?: string
+  timeSlot?: {
+    start: string
+    end: string
+  }
+  chargerCount?: number
+  displayStatus?: string
+  estimatedCost?: number
 }
 
 export class StatisticsAPI {
