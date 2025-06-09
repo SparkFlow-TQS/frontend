@@ -405,14 +405,15 @@ function SchedulePageContent() {
                                     {showAutocomplete && autocompleteResults.length > 0 && (
                                         <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-30 max-h-60 overflow-y-auto">
                                             {autocompleteResults.map((result, index) => (
-                                                <div
+                                                <button
                                                     key={result.id}
-                                                    className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 ${
+                                                    className={`w-full text-left p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 border-0 ${
                                                         index === selectedSuggestionIndex ? 'bg-gray-100' : ''
                                                     }`}
                                                     onMouseDown={(e) => e.preventDefault()} // Prevent blur
                                                     onClick={() => handleAutocompleteSelect(result)}
                                                     onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                                                    aria-label={`Select station ${result.externalId || result.id} - ${result.name}`}
                                                 >
                                                     <div className="text-black">
                                                         <div className="font-medium text-sm">
@@ -430,7 +431,7 @@ function SchedulePageContent() {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -451,10 +452,11 @@ function SchedulePageContent() {
                                 <h3 className="text-lg font-semibold mb-4">Search Results</h3>
                                 <div className="space-y-3 max-h-96 overflow-y-auto">
                                     {searchResults.map((result) => (
-                                        <div 
+                                        <button 
                                             key={result.id}
-                                            className="bg-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-colors"
+                                            className="w-full text-left bg-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-colors border-0"
                                             onClick={() => handleSelectStation(result)}
+                                            aria-label={`Select station ${result.externalId || result.id} - ${result.name}`}
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-1">
@@ -479,7 +481,7 @@ function SchedulePageContent() {
                                                     Select
                                                 </Button>
                                             </div>
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                             </div>

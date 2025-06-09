@@ -782,8 +782,10 @@ export default function DashboardPage() {
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {filteredReservations.slice(0, 5).map((reservation) => (
                       <div key={reservation.id} className="text-xs bg-white p-2 rounded border border-blue-200">
-                        <span className="font-medium">{reservation.stationName}</span> - 
-                        <span className="ml-1">{new Date(reservation.timeSlot.start).toLocaleDateString()}</span> - 
+                        <span className="font-medium">{reservation.stationName}</span>
+                        {" - "}
+                        <span className="ml-1">{new Date(reservation.timeSlot.start).toLocaleDateString()}</span>
+                        {" - "}
                         <span className="ml-1 text-blue-600">€{reservation.estimatedCost?.toFixed(2)}</span>
                       </div>
                     ))}
