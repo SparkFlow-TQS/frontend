@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle, FaExclamationTriangle } from "react-icons/fa"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
+import ProtectedRoute from "@/components/ProtectedRoute"
 import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
 import { Reservation, BookingStatus, backendToDisplayStatus } from "@/types"
 import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, BookingDTO } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
 
 // Constants for calculations
 const DEFAULT_CHARGING_POWER_KW = 22 // Average charging power in kW
@@ -74,6 +76,7 @@ const bookingDTOToReservation = (booking: BookingDTO): Reservation => ({
 })
 
 export default function DashboardPage() {
+  const { user } = useAuth()
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -484,10 +487,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col w-screen overflow-hidden">
-      <header>
-        <Navbar />
-      </header>
+    <ProtectedRoute>
+      <div className="flex h-screen flex-col w-screen overflow-hidden">
+        <header>
+          <Navbar />
+        </header>
       <main className="p-8 h-full flex flex-row items-start bg-[#14213d] text-[#FCA311] overflow-y-auto">
         {/* Sidebar Navigation */}
         <div className="align-middle p-10 justify-center flex flex-col items-center w-1/4 text-center sticky top-0">
@@ -542,14 +546,16 @@ export default function DashboardPage() {
               <CardContent className="p-6 flex flex-row justify-between items-center">
                 <div>
                   <p className="text-sm text-[#14213d]">Welcome back,</p>
-                  <h2 className="text-2xl font-bold text-[#14213d]">Gabriel Silva</h2>
+                  <h2 className="text-2xl font-bold text-[#14213d]">{user?.username ?? 'User'}</h2>
                   <p className="text-[#14213d]">Glad to see you again!</p>
                   <Button className="mt-2 bg-white text-[#14213d] hover:bg-white/90">Edit Profile</Button>
                 </div>
                 <div className="flex flex-col items-center mt-4 md:mt-0">
                   <h3 className="text-xl font-semibold text-[#14213d]">Type of User</h3>
                   <FaUserCircle className="h-20 w-20 text-white mt-2" />
-                  <p className="text-xl font-semibold text-[#14213d] mt-2">Driver</p>
+                  <p className="text-xl font-semibold text-[#14213d] mt-2">
+                    {user?.isOperator ? 'Operator' : 'Driver'}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -802,6 +808,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   )
 }

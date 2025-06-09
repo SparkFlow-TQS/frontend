@@ -15,6 +15,9 @@ export * from './modal'
 // API types
 export * from './api'
 
+// Authentication types
+export * from './auth'
+
 // Common/shared types
 export * from './common'
 

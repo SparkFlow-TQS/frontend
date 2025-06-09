@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FaMapPin, FaSearch, FaBolt, FaExclamationTriangle, FaCheck, FaSync } from "react-icons/fa"
 import { Calendar } from "@/components/ui/calendar"
 import Navbar from "@/components/navbar"
+import ProtectedRoute from "@/components/ProtectedRoute"
 import { type ChargingStation } from "@/types"
 import { StationAPI } from "@/lib/api"
 import { ReservationManager } from "@/lib/reservations"
@@ -361,24 +362,27 @@ function SchedulePageContent() {
 
     if (loading) {
         return (
-            <div className="flex h-screen flex-col w-screen overflow-hidden">
-                <header>
-                    <Navbar />
-                </header>
-                <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 items-center justify-center">
-                    <div className="text-white text-lg">Loading station data...</div>
-                </main>
-            </div>
+            <ProtectedRoute>
+                <div className="flex h-screen flex-col w-screen overflow-hidden">
+                    <header>
+                        <Navbar />
+                    </header>
+                    <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 items-center justify-center">
+                        <div className="text-white text-lg">Loading station data...</div>
+                    </main>
+                </div>
+            </ProtectedRoute>
         )
     }
 
     // Show search interface if no station is selected
     if (!station) {
         return (
-            <div className="flex h-screen flex-col w-screen overflow-hidden">
-                <header>
-                    <Navbar />
-                </header>
+            <ProtectedRoute>
+                <div className="flex h-screen flex-col w-screen overflow-hidden">
+                    <header>
+                        <Navbar />
+                    </header>
                 <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 ">
                     <div className="max-w-2xl mx-auto text-white w-full">
                         <h1 className="text-3xl font-bold text-center mb-8">Schedule Charging Session</h1>
@@ -496,7 +500,8 @@ function SchedulePageContent() {
                         )}
                     </div>
                 </main>
-            </div>
+                </div>
+            </ProtectedRoute>
         )
     }
 
@@ -505,10 +510,11 @@ function SchedulePageContent() {
     const estimatedCost = (durationMinutes / 60) * chargerCount * 25 * 0.35 // rough calculation
 
     return (
-        <div className="flex h-screen flex-col w-screen overflow-hidden">
-            <header>
-                <Navbar />
-            </header>
+        <ProtectedRoute>
+            <div className="flex h-screen flex-col w-screen overflow-hidden">
+                <header>
+                    <Navbar />
+                </header>
             <main className="h-screen flex flex-col bg-[#14213d] flex-1 p-4 md:p-6 overflow-y-auto">
                 {/* Back to search button */}
                 <div className="w-full mb-4 px-8 flex justify-start">
@@ -732,7 +738,8 @@ function SchedulePageContent() {
                     </form>
                 </div>
             </main>
-        </div>
+            </div>
+        </ProtectedRoute>
     )
 }
 
