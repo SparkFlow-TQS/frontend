@@ -9,7 +9,7 @@ import Navbar from "@/components/navbar"
 import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
 import { Reservation } from "@/types"
-import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, CostTrendData } from "@/lib/api"
+import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, CostTrendData, BookingDTO } from "@/lib/api"
 import ProtectedRoute from "@/components/ProtectedRoute"
 
 interface HoveredData {
@@ -23,7 +23,7 @@ interface HoveredData {
     duration?: number
     kwh?: number
     height?: number
-    reservations?: Reservation[]
+    reservations?: any[]
     week?: string
     dateRange?: string
     title?: string
@@ -171,7 +171,12 @@ export default function DashboardPage() {
   // Generate monthly data (fallback when using localStorage)
   const generateMonthlyData = () => {
     if (!usingFallbackData && apiMonthlyStats.length > 0) {
-      return apiMonthlyStats
+      // Add height calculation for API data
+      const maxCost = Math.max(...apiMonthlyStats.map(d => d.cost), 1)
+      return apiMonthlyStats.map(data => ({
+        ...data,
+        height: (data.cost / maxCost) * 80 + 20 // 20-100% height range
+      }))
     }
 
     // Fallback generation from localStorage reservations
@@ -204,17 +209,40 @@ export default function DashboardPage() {
         sessions,
         duration,
         kwh,
-        reservations: monthReservations as any // Type assertion for compatibility
+        reservations: monthReservations.map(r => ({
+          id: Math.random(), // Generate ID for compatibility
+          userId: 0,
+          stationId: 0,
+          startTime: r.timeSlot.start,
+          endTime: r.timeSlot.end,
+          cost: r.estimatedCost || 0,
+          status: r.displayStatus || 'unknown',
+          stationName: r.stationName,
+          timeSlot: r.timeSlot,
+          chargerCount: r.chargerCount,
+          displayStatus: r.displayStatus,
+          estimatedCost: r.estimatedCost
+        } as unknown as BookingDTO))
       })
     }
     
-    return monthlyData
+    // Add height calculation for chart display
+    const maxCost = Math.max(...monthlyData.map(d => d.cost), 1)
+    return monthlyData.map(data => ({
+      ...data,
+      height: (data.cost / maxCost) * 80 + 20 // 20-100% height range
+    }))
   }
 
   // Generate weekly data (fallback when using localStorage)
   const generateWeeklyData = () => {
     if (!usingFallbackData && apiWeeklyStats.length > 0) {
-      return apiWeeklyStats
+      // Add height calculation for API data
+      const maxSessions = Math.max(...apiWeeklyStats.map(d => d.sessions), 1)
+      return apiWeeklyStats.map(data => ({
+        ...data,
+        height: (data.sessions / maxSessions) * 80 + 20 // 20-100% height range
+      }))
     }
 
     // Fallback generation from localStorage reservations
@@ -250,24 +278,42 @@ export default function DashboardPage() {
         sessions,
         cost,
         dateRange: `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
-        reservations: weekReservations as any // Type assertion for compatibility
+        reservations: weekReservations.map(r => ({
+          id: Math.random(), // Generate ID for compatibility
+          userId: 0,
+          stationId: 0,
+          startTime: r.timeSlot.start,
+          endTime: r.timeSlot.end,
+          cost: r.estimatedCost || 0,
+          status: r.displayStatus || 'unknown',
+          stationName: r.stationName,
+          timeSlot: r.timeSlot,
+          chargerCount: r.chargerCount,
+          displayStatus: r.displayStatus,
+          estimatedCost: r.estimatedCost
+        } as unknown as BookingDTO))
       })
       
       weekStart.setDate(weekStart.getDate() + 7)
       weekNumber++
     }
     
-    return weeklyData
+    // Add height calculation for chart display
+    const maxSessions = Math.max(...weeklyData.map(d => d.sessions), 1)
+    return weeklyData.map(data => ({
+      ...data,
+      height: (data.sessions / maxSessions) * 80 + 20 // 20-100% height range
+    }))
   }
 
   // Handle month click
-  const handleMonthClick = (monthData: { month: string; cost: number; sessions: number; reservations: Reservation[] }) => {
+  const handleMonthClick = (monthData: { month: string; cost: number; sessions: number; reservations: any }) => {
     setSelectedMonth(selectedMonth === monthData.month ? null : monthData.month)
     setSelectedWeek(null)
   }
 
   // Handle week click
-  const handleWeekClick = (weekData: { week: string; sessions: number; cost: number; reservations: Reservation[] }) => {
+  const handleWeekClick = (weekData: { week: string; sessions: number; cost: number; reservations: any }) => {
     setSelectedWeek(selectedWeek === weekData.week ? null : weekData.week)
     setSelectedMonth(null)
   }
@@ -663,13 +709,13 @@ export default function DashboardPage() {
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Total Cost</p>
                     <p className="text-xl font-bold text-blue-700">
-                      €{filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0).toFixed(2)}
+                      €{filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || r.cost || 0), 0).toFixed(2)}
                     </p>
                   </div>
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Avg Cost per Session</p>
                     <p className="text-xl font-bold text-blue-700">
-                      €{(filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0) / filteredReservations.length).toFixed(2)}
+                      €{(filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || r.cost || 0), 0) / filteredReservations.length).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -678,9 +724,9 @@ export default function DashboardPage() {
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {filteredReservations.slice(0, 5).map((reservation) => (
                       <div key={reservation.id} className="text-xs bg-white p-2 rounded border border-blue-200">
-                        <span className="font-medium">{reservation.stationName}</span> - 
-                        <span className="ml-1">{new Date(reservation.timeSlot.start).toLocaleDateString()}</span> - 
-                        <span className="ml-1 text-blue-600">€{reservation.estimatedCost?.toFixed(2)}</span>
+                        <span className="font-medium">{reservation.stationName || `Station ${reservation.stationId}`}</span> - 
+                        <span className="ml-1">{new Date(reservation.timeSlot?.start || reservation.startTime).toLocaleDateString()}</span> - 
+                        <span className="ml-1 text-blue-600">€{(reservation.estimatedCost || reservation.cost || 0).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

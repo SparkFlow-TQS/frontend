@@ -3,8 +3,7 @@ import {
   RegisterRequest, 
   AuthResponse, 
   RefreshTokenRequest, 
-  User,
-  AuthError 
+  User
 } from '@/types/auth'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
