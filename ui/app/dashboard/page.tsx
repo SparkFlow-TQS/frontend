@@ -398,14 +398,14 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "This month's costs",
-      value: `€${monthlyStats.totalCost}`,
+      value: `€${monthlyStats.totalCost.toFixed(2)}`,
       icon: <FaDollarSign className="h-5 w-5 text-white" />,
-      detail: `Avg per session: €${monthlyStats.avgCostPerSession}`,
+      detail: `Avg per session: €${monthlyStats.avgCostPerSession.toFixed(2)}`,
       change: getCostChangeIndicator()
     },
     {
       title: "This month's kWh",
-      value: `${monthlyStats.estimatedKwh} kWh`,
+      value: `${monthlyStats.estimatedKwh.toFixed(2)} kWh`,
       icon: <FaBolt className="h-5 w-5 text-white" />,
       detail: `~${(monthlyStats.estimatedKwh * CO2_EQUIVALENT_FACTOR).toFixed(2)} kg CO2 equivalent`,
       change: '+'
@@ -419,7 +419,7 @@ export default function DashboardPage() {
     },
     {
       title: "CO2 Saved",
-      value: `${monthlyStats.co2Saved} kg`,
+      value: `${monthlyStats.co2Saved.toFixed(2)} kg`,
       icon: <FaLeaf className="h-5 w-5 text-white" />,
       detail: `Equivalent to ${(monthlyStats.co2Saved * GASOLINE_EQUIVALENT_FACTOR).toFixed(1)} L gasoline saved`,
       change: '+'
@@ -548,7 +548,9 @@ export default function DashboardPage() {
                   <p className="text-sm text-[#14213d]">Welcome back,</p>
                   <h2 className="text-2xl font-bold text-[#14213d]">{user?.username ?? 'User'}</h2>
                   <p className="text-[#14213d]">Glad to see you again!</p>
-                  <Button className="mt-2 bg-white text-[#14213d] hover:bg-white/90">Edit Profile</Button>
+                  <Link href="/profile">
+                    <Button className="mt-2 bg-white text-[#14213d] hover:bg-white/90">Edit Profile</Button>
+                  </Link>
                 </div>
                 <div className="flex flex-col items-center mt-4 md:mt-0">
                   <h3 className="text-xl font-semibold text-[#14213d]">Type of User</h3>
@@ -604,7 +606,7 @@ export default function DashboardPage() {
                       <div className="font-semibold">{hoveredData.data.fullMonth ?? 'Unknown Month'}</div>
                       <div>Cost: €{(hoveredData.data.cost ?? 0).toFixed(2)}</div>
                       <div>Sessions: {hoveredData.data.sessions ?? 0}</div>
-                      <div>Energy: {hoveredData.data.kwh ?? 0} kWh</div>
+                      <div>Energy: {(hoveredData.data.kwh ?? 0).toFixed(2)} kWh</div>
                     </div>
                   )}
                 </div>

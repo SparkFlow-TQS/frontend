@@ -196,7 +196,7 @@ export default function PaymentsPage() {
                 variant="outline" 
                 size="sm" 
                 onClick={exportTransactions}
-                className="text-white border-white"
+                className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
               >
                 <FaDownload className="mr-2 h-3 w-3" />
                 Export Transactions
@@ -257,7 +257,7 @@ export default function PaymentsPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleSetDefault(card.id)}
-                                  className="text-white border-white"
+                                  className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
                                 >
                                   Set Default
                                 </Button>
@@ -340,7 +340,7 @@ export default function PaymentsPage() {
                             type="button" 
                             variant="outline" 
                             onClick={() => setShowAddCard(false)}
-                            className="text-white border-white"
+                            className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
                           >
                             Cancel
                           </Button>
