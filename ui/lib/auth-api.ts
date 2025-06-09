@@ -9,8 +9,8 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 export class AuthAPI {
-  private static baseURL = `${API_BASE_URL}/api/v1/auth`
-  private static userURL = `${API_BASE_URL}/api/v1/users`
+  private static baseURL = `${API_BASE_URL}/auth`
+  private static userURL = `${API_BASE_URL}/users`
 
   /**
    * Login user with email/username and password
