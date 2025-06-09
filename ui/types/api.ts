@@ -47,4 +47,43 @@ export interface RequestConfig {
   headers?: Record<string, string>
   body?: unknown
   timeout?: number
+}
+
+export interface BookingDTO {
+  id: number
+  stationId: number
+  stationName?: string
+  userId: number
+  startTime: string
+  endTime: string
+  displayStatus?: string
+  estimatedCost?: number
+}
+
+export interface CreateBookingRequest {
+  stationId: number
+  userId: number
+  startTime: string
+  endTime: string
+  recurringDays?: Set<number>
+}
+
+export interface RecurringBookingRequest {
+  userId: number
+  stationId: number
+  startTime: string
+  endTime: string
+  recurringDays: Set<number>
+}
+
+export type ApiBookingStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED'
+
+export interface Booking {
+  id: number
+  stationId: number
+  userId: number
+  startTime: string
+  endTime: string
+  recurringDays?: Set<number>
+  status: ApiBookingStatus
 } 
