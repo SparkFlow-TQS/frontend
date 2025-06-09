@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle, FaEuroSign, FaChargingStation, FaExclamationTriangle } from "react-icons/fa"
+import { FaUserCircle, FaBolt, FaDollarSign, FaClock, FaLeaf, FaCreditCard, FaCalendar, FaHistory, FaInfoCircle, FaExclamationTriangle } from "react-icons/fa"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
 import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
-import { Reservation } from "@/types"
-import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, CostTrendData } from "@/lib/api"
+import { Reservation, BookingStatus, backendToDisplayStatus } from "@/types"
+import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, BookingDTO } from "@/lib/api"
 
 interface HoveredData {
   type: 'stat' | 'month' | 'week' | 'trend'
@@ -22,7 +22,7 @@ interface HoveredData {
     duration?: number
     kwh?: number
     height?: number
-    reservations?: Reservation[]
+    reservations?: Reservation[] | BookingDTO[]
     week?: string
     dateRange?: string
     title?: string
@@ -33,6 +33,35 @@ interface HoveredData {
   y?: number
 }
 
+// Helper function to convert Reservation to BookingDTO for type compatibility
+const reservationToBookingDTO = (reservation: Reservation): BookingDTO => ({
+  id: parseInt(reservation.id.replace(/\D/g, '')) || Math.floor(Math.random() * 1000000), // Extract numbers or generate random ID
+  userId: reservation.userId ?? 0,
+  stationId: reservation.stationId,
+  startTime: reservation.timeSlot.start.toISOString(),
+  endTime: reservation.timeSlot.end.toISOString(),
+  cost: reservation.estimatedCost ?? 0,
+  status: reservation.status
+})
+
+// Helper function to convert BookingDTO back to Reservation for UI compatibility
+const bookingDTOToReservation = (booking: BookingDTO): Reservation => ({
+  id: booking.id.toString(),
+  stationId: booking.stationId,
+  stationName: `Station ${booking.stationId}`, // Default name since BookingDTO doesn't include it
+  userId: booking.userId,
+  timeSlot: {
+    start: new Date(booking.startTime),
+    end: new Date(booking.endTime)
+  },
+  chargerCount: 1, // Default value
+  status: booking.status as BookingStatus, // Type assertion to BookingStatus
+  displayStatus: backendToDisplayStatus(booking.status as BookingStatus), // Convert using helper function
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  estimatedCost: booking.cost
+})
+
 export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,13 +70,11 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [hoveredData, setHoveredData] = useState<HoveredData | null>(null)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   // API Statistics state
   const [currentMonthStats, setCurrentMonthStats] = useState<CurrentMonthStats | null>(null)
   const [apiMonthlyStats, setApiMonthlyStats] = useState<MonthlyData[]>([])
   const [apiWeeklyStats, setApiWeeklyStats] = useState<WeeklyData[]>([])
-  const [costTrend, setCostTrend] = useState<CostTrendData[]>([])
   const [usingFallbackData, setUsingFallbackData] = useState(false)
 
   useEffect(() => {
@@ -58,24 +85,24 @@ export default function DashboardPage() {
       
       try {
         // Try to load statistics from API
-        const [currentStats, monthlyData, weeklyData, trendData] = await Promise.all([
+        const [currentStats, monthlyData, weeklyData] = await Promise.all([
           StatisticsAPI.getCurrentMonthStats(),
           StatisticsAPI.getMonthlyStats(12),
-          StatisticsAPI.getWeeklyCurrentMonthStats(),
-          StatisticsAPI.getCostTrend(8)
+          StatisticsAPI.getWeeklyCurrentMonthStats()
         ])
         
         setCurrentMonthStats(currentStats)
         setApiMonthlyStats(monthlyData)
         setApiWeeklyStats(weeklyData)
-        setCostTrend(trendData)
         setUsingFallbackData(false)
         
-      } catch (apiError: any) {
+      } catch (apiError: unknown) {
         console.error('Error loading statistics from API:', apiError)
         
         // Check if it's a 403 unauthorized error
-        if (apiError.message?.includes('403') || apiError.status === 403) {
+        const errorMessage = apiError instanceof Error ? apiError.message : String(apiError)
+        const errorStatus = apiError && typeof apiError === 'object' && 'status' in apiError ? (apiError as { status: number }).status : null
+        if (errorMessage.includes('403') || errorStatus === 403) {
           setIsUnauthorized(true)
           setError('Acesso negado. Você precisa estar autenticado para visualizar as estatísticas.')
           setLoading(false)
@@ -170,7 +197,12 @@ export default function DashboardPage() {
   // Generate monthly data (fallback when using localStorage)
   const generateMonthlyData = () => {
     if (!usingFallbackData && apiMonthlyStats.length > 0) {
-      return apiMonthlyStats
+      // Add height calculation for API data
+      const maxCost = Math.max(...apiMonthlyStats.map(d => d.cost), 1)
+      return apiMonthlyStats.map(data => ({
+        ...data,
+        height: (data.cost / maxCost) * 100
+      }))
     }
 
     // Fallback generation from localStorage reservations
@@ -203,17 +235,27 @@ export default function DashboardPage() {
         sessions,
         duration,
         kwh,
-        reservations: monthReservations as any // Type assertion for compatibility
+        reservations: monthReservations.map(reservationToBookingDTO)
       })
     }
     
-    return monthlyData
+    // Calculate heights for chart rendering
+    const maxCost = Math.max(...monthlyData.map(d => d.cost), 1)
+    return monthlyData.map(data => ({
+      ...data,
+      height: (data.cost / maxCost) * 100
+    }))
   }
 
   // Generate weekly data (fallback when using localStorage)
   const generateWeeklyData = () => {
     if (!usingFallbackData && apiWeeklyStats.length > 0) {
-      return apiWeeklyStats
+      // Add height calculation for API data
+      const maxSessions = Math.max(...apiWeeklyStats.map(d => d.sessions), 1)
+      return apiWeeklyStats.map(data => ({
+        ...data,
+        height: (data.sessions / maxSessions) * 100
+      }))
     }
 
     // Fallback generation from localStorage reservations
@@ -227,7 +269,7 @@ export default function DashboardPage() {
     const lastDay = new Date(currentYear, currentMonth + 1, 0)
     
     // Generate weeks for current month
-    let weekStart = new Date(firstDay)
+    const weekStart = new Date(firstDay)
     weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // Start from Sunday
     
     let weekNumber = 1
@@ -249,37 +291,42 @@ export default function DashboardPage() {
         sessions,
         cost,
         dateRange: `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
-        reservations: weekReservations as any // Type assertion for compatibility
+        reservations: weekReservations.map(reservationToBookingDTO)
       })
       
       weekStart.setDate(weekStart.getDate() + 7)
       weekNumber++
     }
     
-    return weeklyData
+    // Calculate heights for chart rendering
+    const maxSessions = Math.max(...weeklyData.map(d => d.sessions), 1)
+    return weeklyData.map(data => ({
+      ...data,
+      height: (data.sessions / maxSessions) * 100
+    }))
   }
 
   // Handle month click
-  const handleMonthClick = (monthData: { month: string; cost: number; sessions: number; reservations: Reservation[] }) => {
+  const handleMonthClick = (monthData: { month: string; cost: number; sessions: number; reservations: BookingDTO[] }) => {
     setSelectedMonth(selectedMonth === monthData.month ? null : monthData.month)
     setSelectedWeek(null)
   }
 
   // Handle week click
-  const handleWeekClick = (weekData: { week: string; sessions: number; cost: number; reservations: Reservation[] }) => {
+  const handleWeekClick = (weekData: { week: string; sessions: number; cost: number; reservations: BookingDTO[] }) => {
     setSelectedWeek(selectedWeek === weekData.week ? null : weekData.week)
     setSelectedMonth(null)
   }
 
   // Filter reservations based on selection
-  const getFilteredReservations = () => {
+  const getFilteredReservations = (): Reservation[] => {
     if (selectedMonth) {
       const monthData = monthlyData.find(m => m.month === selectedMonth)
-      return monthData?.reservations || []
+      return monthData?.reservations.map(bookingDTOToReservation) || []
     }
     if (selectedWeek) {
       const weekData = weeklyData.find(w => w.week === selectedWeek)
-      return weekData?.reservations || []
+      return weekData?.reservations.map(bookingDTOToReservation) || []
     }
     return []
   }
