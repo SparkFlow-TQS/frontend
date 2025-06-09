@@ -607,10 +607,10 @@ export default function DashboardPage() {
                   {/* Tooltip */}
                   {hoveredData?.type === 'month' && hoveredData.data && (
                     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-black text-white p-2 rounded shadow-lg text-xs z-10">
-                      <div className="font-semibold">{hoveredData.data.fullMonth || 'Unknown Month'}</div>
-                      <div>Cost: €{(hoveredData.data.cost || 0).toFixed(2)}</div>
-                      <div>Sessions: {hoveredData.data.sessions || 0}</div>
-                      <div>Energy: {hoveredData.data.kwh || 0} kWh</div>
+                      <div className="font-semibold">{hoveredData.data.fullMonth ?? 'Unknown Month'}</div>
+                      <div>Cost: €{(hoveredData.data.cost ?? 0).toFixed(2)}</div>
+                      <div>Sessions: {hoveredData.data.sessions ?? 0}</div>
+                      <div>Energy: {hoveredData.data.kwh ?? 0} kWh</div>
                     </div>
                   )}
                 </div>
@@ -653,10 +653,10 @@ export default function DashboardPage() {
                   {/* Week Tooltip */}
                   {hoveredData?.type === 'week' && hoveredData.data && (
                     <div className="absolute top-0 right-0 bg-black text-white p-2 rounded shadow-lg text-xs z-10">
-                      <div className="font-semibold">{hoveredData.data.week || 'Unknown Week'}</div>
-                      <div>{hoveredData.data.dateRange || 'Unknown Date Range'}</div>
-                      <div>Sessions: {hoveredData.data.sessions || 0}</div>
-                      <div>Cost: €{(hoveredData.data.cost || 0).toFixed(2)}</div>
+                      <div className="font-semibold">{hoveredData.data.week ?? 'Unknown Week'}</div>
+                      <div>{hoveredData.data.dateRange ?? 'Unknown Date Range'}</div>
+                      <div>Sessions: {hoveredData.data.sessions ?? 0}</div>
+                      <div>Cost: €{(hoveredData.data.cost ?? 0).toFixed(2)}</div>
                     </div>
                   )}
                 </div>
@@ -672,8 +672,8 @@ export default function DashboardPage() {
                     <svg viewBox="0 0 400 150" className="w-full h-full">
                       {/* Trend Line */}
                       <path
-                        d={`M0,${150 - (monthlyData[4]?.height || 50)} ${monthlyData.slice(4).map((data, index) => 
-                          `L${(index + 1) * 50},${150 - (data.height || 50)}`
+                        d={`M0,${150 - (monthlyData[4]?.height ?? 50)} ${monthlyData.slice(4).map((data, index) => 
+                          `L${(index + 1) * 50},${150 - (data.height ?? 50)}`
                         ).join(' ')}`}
                         fill="none"
                         stroke="#FFA500"
@@ -685,16 +685,16 @@ export default function DashboardPage() {
                         <circle
                           key={data.month}
                           cx={(monthlyData.indexOf(data) - 3) * 50}
-                          cy={150 - (data.height || 50)}
+                          cy={150 - (data.height ?? 50)}
                           r="6"
                           fill="#FFA500"
                           className="cursor-pointer hover:fill-[#14213d] transition-colors duration-200"
                           onClick={() => handleMonthClick(data)}
-                          onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (monthlyData.indexOf(data) - 3) * 50, y: 150 - (data.height || 50) })}
+                          onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (monthlyData.indexOf(data) - 3) * 50, y: 150 - (data.height ?? 50) })}
                           onMouseLeave={() => setHoveredData(null)}
                           role="button"
                           tabIndex={0}
-                          aria-label={`${data.month}: €${(data.cost || 0).toFixed(2)}`}
+                          aria-label={`${data.month}: €${(data.cost ?? 0).toFixed(2)}`}
                         />
                       ))}
                       
@@ -717,7 +717,7 @@ export default function DashboardPage() {
                             fill="white"
                             fontSize="10"
                           >
-                            {hoveredData.data.month || ''}
+                            {hoveredData.data.month ?? ''}
                           </text>
                           <text
                             x={hoveredData.x}
@@ -726,7 +726,7 @@ export default function DashboardPage() {
                             fill="white"
                             fontSize="8"
                           >
-                            €{(hoveredData.data.cost || 0).toFixed(0)}
+                            €{(hoveredData.data.cost ?? 0).toFixed(0)}
                           </text>
                         </g>
                       )}
