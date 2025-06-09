@@ -23,6 +23,11 @@ export class ReservationManager {
       if (!stored) return []
       
       const reservations = JSON.parse(stored)
+      // Validate that parsed data is an array
+      if (!Array.isArray(reservations)) {
+        console.warn('Invalid reservations data in localStorage - not an array')
+        return []
+      }
       // Convert date strings back to Date objects and handle legacy data
       return reservations.map((r: {
         id: string
@@ -272,7 +277,7 @@ export class ReservationManager {
   // ===== PRIVATE HELPER METHODS =====
 
   private static generateReservationId(): string {
-    return 'res_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    return 'res_' + Date.now() + '_' + crypto.randomUUID().replace(/-/g, '').slice(0, 9)
   }
 
   private static calculateEstimatedCost(timeSlot: TimeSlot, chargerCount: number): number {

@@ -35,7 +35,7 @@ interface HoveredData {
 
 // Helper function to convert Reservation to BookingDTO for type compatibility
 const reservationToBookingDTO = (reservation: Reservation): BookingDTO => ({
-  id: parseInt(reservation.id.replace(/\D/g, '')) || Math.floor(Math.random() * 1000000), // Extract numbers or generate random ID
+  id: parseInt(reservation.id.replace(/\D/g, '')) || Math.abs(crypto.randomUUID().slice(0, 8).split('').reduce((a, c) => a + c.charCodeAt(0), 0)), // Extract numbers or generate secure random ID
   userId: reservation.userId ?? 0,
   stationId: reservation.stationId,
   startTime: reservation.timeSlot.start.toISOString(),

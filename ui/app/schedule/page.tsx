@@ -57,9 +57,19 @@ function SchedulePageContent() {
                     const stationFromAPI = await StationAPI.getStationById(parseInt(stationId))
                     setStation(stationFromAPI)
                 } else if (stationData) {
-                    // Parse station data from URL parameters
-                    const parsedStation = JSON.parse(decodeURIComponent(stationData))
-                    setStation(parsedStation)
+                    // Parse station data from URL parameters with validation
+                    try {
+                        const parsedStation = JSON.parse(decodeURIComponent(stationData))
+                        // Basic validation of required station properties
+                        if (parsedStation && typeof parsedStation === 'object' && parsedStation.id && parsedStation.name) {
+                            setStation(parsedStation)
+                        } else {
+                            throw new Error('Invalid station data structure')
+                        }
+                    } catch (jsonError) {
+                        console.error('Invalid station data in URL parameters:', jsonError)
+                        setError('Invalid station data. Please search for a station.')
+                    }
                 }
                 // No default fallback - user must search or come from map
             } catch (error) {
@@ -162,7 +172,17 @@ function SchedulePageContent() {
 
     const handleNavigate = () => {
         if (station && typeof window !== 'undefined') {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`, '_blank')
+            // Validate coordinates before opening external URL
+            const lat = Number(station.latitude)
+            const lng = Number(station.longitude)
+            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                console.error('Invalid coordinates for navigation')
+                return
+            }
+            const newWindow = window.open('', '_blank', 'noopener,noreferrer')
+            if (newWindow) {
+                newWindow.location.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+            }
         }
     }
 
