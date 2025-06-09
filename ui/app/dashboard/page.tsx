@@ -548,7 +548,9 @@ export default function DashboardPage() {
                   <p className="text-sm text-[#14213d]">Welcome back,</p>
                   <h2 className="text-2xl font-bold text-[#14213d]">{user?.username ?? 'User'}</h2>
                   <p className="text-[#14213d]">Glad to see you again!</p>
-                  <Button className="mt-2 bg-white text-[#14213d] hover:bg-white/90">Edit Profile</Button>
+                  <Link href="/profile">
+                    <Button className="mt-2 bg-white text-[#14213d] hover:bg-white/90">Edit Profile</Button>
+                  </Link>
                 </div>
                 <div className="flex flex-col items-center mt-4 md:mt-0">
                   <h3 className="text-xl font-semibold text-[#14213d]">Type of User</h3>
