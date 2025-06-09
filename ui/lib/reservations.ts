@@ -12,6 +12,23 @@ import { DEFAULT_CHARGERS_PER_STATION } from '@/types/station'
 
 const RESERVATIONS_STORAGE_KEY = 'sparkflow_reservations'
 
+// Helper functions for status conversion
+const getBackendStatus = (status?: string, displayStatus?: string): 'ACTIVE' | 'CANCELLED' | 'COMPLETED' => {
+  if (status) {
+    return status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED'
+  }
+  const fallbackDisplayStatus = (displayStatus as ReservationDisplayStatus) ?? 'pending'
+  return displayToBackendStatus(fallbackDisplayStatus)
+}
+
+const getDisplayStatus = (displayStatus?: string, status?: string): ReservationDisplayStatus => {
+  if (displayStatus) {
+    return displayStatus as ReservationDisplayStatus
+  }
+  const fallbackStatus = (status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') ?? 'ACTIVE'
+  return backendToDisplayStatus(fallbackStatus)
+}
+
 // ===== LOCAL STORAGE UTILITIES =====
 
 export class ReservationManager {
@@ -53,8 +70,8 @@ export class ReservationManager {
         createdAt: new Date(r.createdAt),
         updatedAt: new Date(r.updatedAt),
         // Handle status conversion for backward compatibility
-        status: r.status ? (r.status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') : displayToBackendStatus((r.displayStatus as ReservationDisplayStatus) || 'pending'),
-        displayStatus: r.displayStatus ? (r.displayStatus as ReservationDisplayStatus) : backendToDisplayStatus((r.status as 'ACTIVE' | 'CANCELLED' | 'COMPLETED') || 'ACTIVE'),
+        status: getBackendStatus(r.status, r.displayStatus),
+        displayStatus: getDisplayStatus(r.displayStatus, r.status),
         // Convert recurringDays array to Set if needed
         recurringDays: r.recurringDays ? new Set(Array.isArray(r.recurringDays) ? r.recurringDays : Array.from(r.recurringDays)) : undefined
       }))
