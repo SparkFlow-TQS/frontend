@@ -280,7 +280,7 @@ function SchedulePageContent() {
             const availabilityCheck = ReservationManager.checkAvailability(
                 station.id,
                 timeSlot,
-                station.quantityOfChargers
+                { totalChargers: station.quantityOfChargers }
             )
 
             if (availabilityCheck.availableChargers < chargerCount) {

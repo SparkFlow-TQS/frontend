@@ -153,7 +153,7 @@ export default function MapPage() {
         (position) => {
           const { latitude, longitude } = position.coords
           const userCoords: [number, number] = [latitude, longitude]
-          console.log('User location obtained:', userCoords)
+          // User location obtained successfully
           setUserLocation(userCoords)
           setCenter(userCoords) // Center map on user's location
           setLoading(false)
@@ -189,7 +189,7 @@ export default function MapPage() {
         const radius = filters?.maxDistance || 25 // Use filter radius or default 25km
         
         const stationsData = await StationAPI.getNearbyStations(lat, lng, radius)
-        console.log('Stations data:', stationsData)
+        // Stations data fetched successfully
         setStations(stationsData)
         setFilteredStations(stationsData) // Initialize filtered stations
       } catch (err) {
@@ -355,9 +355,9 @@ export default function MapPage() {
   useEffect(() => {
     const fetchTotalCount = async () => {
       try {
-        console.log('Fetching total station count...')
+        // Fetching total station count
         const count = await StationAPI.getTotalStationCount()
-        console.log('Total station count received:', count)
+        // Total station count received
         setTotalStationCount(count)
       } catch (err) {
         console.error('Failed to fetch total station count:', err)

@@ -11,6 +11,17 @@ import { ReservationManager } from "@/lib/reservations"
 import { Reservation, BookingStatus, backendToDisplayStatus } from "@/types"
 import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, BookingDTO } from "@/lib/api"
 
+// Constants for calculations
+const DEFAULT_CHARGING_POWER_KW = 22 // Average charging power in kW
+const CO2_SAVED_PER_KWH = 0.4 // kg CO2 saved per kWh
+const CO2_EQUIVALENT_FACTOR = 0.35 // kg CO2 equivalent factor
+const GASOLINE_EQUIVALENT_FACTOR = 0.43 // L gasoline equivalent per kg CO2
+
+// Type guard for BookingStatus
+const isValidBookingStatus = (status: string): status is BookingStatus => {
+  return ['ACTIVE', 'CANCELLED', 'COMPLETED'].includes(status)
+}
+
 interface HoveredData {
   type: 'stat' | 'month' | 'week' | 'trend'
   index?: number
@@ -55,8 +66,8 @@ const bookingDTOToReservation = (booking: BookingDTO): Reservation => ({
     end: new Date(booking.endTime)
   },
   chargerCount: 1, // Default value
-  status: booking.status as BookingStatus, // Type assertion to BookingStatus
-  displayStatus: backendToDisplayStatus(booking.status as BookingStatus), // Convert using helper function
+  status: isValidBookingStatus(booking.status) ? booking.status : 'ACTIVE', // Safe type check
+  displayStatus: backendToDisplayStatus(isValidBookingStatus(booking.status) ? booking.status : 'ACTIVE'), // Safe type conversion
   createdAt: new Date(),
   updatedAt: new Date(),
   estimatedCost: booking.cost
@@ -110,7 +121,6 @@ export default function DashboardPage() {
         }
         
         // For other errors, fall back to localStorage data
-        console.log('Falling back to localStorage data due to API error')
         setUsingFallbackData(true)
         loadReservationsFromStorage()
       }
@@ -180,9 +190,9 @@ export default function DashboardPage() {
     const totalSessions = currentMonthReservations.length
     const estimatedKwh = currentMonthReservations.reduce((sum, reservation) => {
       const duration = (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
-      return sum + (duration * 22) // Assuming 22kW average charging power
+      return sum + (duration * DEFAULT_CHARGING_POWER_KW)
     }, 0)
-    const co2Saved = estimatedKwh * 0.4 // Assuming 0.4kg CO2 saved per kWh
+    const co2Saved = estimatedKwh * CO2_SAVED_PER_KWH
     const avgCostPerSession = totalSessions > 0 ? totalCost / totalSessions : 0
 
     return {
@@ -226,7 +236,7 @@ export default function DashboardPage() {
       const duration = monthReservations.reduce((sum, reservation) => {
         return sum + (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
       }, 0)
-      const kwh = duration * 22 // Assuming 22kW average
+      const kwh = duration * DEFAULT_CHARGING_POWER_KW
 
       monthlyData.push({
         month,
@@ -349,7 +359,7 @@ export default function DashboardPage() {
       title: "This month's kWh",
       value: `${monthlyStats.estimatedKwh} kWh`,
       icon: <FaBolt className="h-5 w-5 text-white" />,
-      detail: `~${(monthlyStats.estimatedKwh * 0.35).toFixed(2)} kg CO2 equivalent`,
+      detail: `~${(monthlyStats.estimatedKwh * CO2_EQUIVALENT_FACTOR).toFixed(2)} kg CO2 equivalent`,
       change: '+'
     },
     {
@@ -363,12 +373,12 @@ export default function DashboardPage() {
       title: "CO2 Saved",
       value: `${monthlyStats.co2Saved} kg`,
       icon: <FaLeaf className="h-5 w-5 text-white" />,
-      detail: `Equivalent to ${(monthlyStats.co2Saved * 0.43).toFixed(1)} L gasoline saved`,
+      detail: `Equivalent to ${(monthlyStats.co2Saved * GASOLINE_EQUIVALENT_FACTOR).toFixed(1)} L gasoline saved`,
       change: '+'
     }
   ]
 
-  const sidebar_items = [
+  const sidebarItems = [
     {
       title: "My Bookings",
       icon: <FaCalendar className="h-5 w-5 text-white" />,
@@ -436,7 +446,7 @@ export default function DashboardPage() {
       <main className="p-8 h-full flex flex-row items-start bg-[#14213d] text-[#FCA311] overflow-y-auto">
         {/* Sidebar Navigation */}
         <div className="align-middle p-10 justify-center flex flex-col items-center w-1/4 text-center sticky top-0">
-            {sidebar_items.map((items, index) => (
+            {sidebarItems.map((items, index) => (
               <Link key={index} href={items.href} className="w-full">
                 <Card className="bg-[#FFA500] cursor-pointer hover:bg-[#FFA500]/90 transition-colors mb-4">
                   <CardContent className="p-4">

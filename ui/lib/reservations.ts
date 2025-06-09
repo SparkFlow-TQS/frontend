@@ -201,9 +201,12 @@ export class ReservationManager {
   static checkAvailability(
     stationId: number, 
     timeSlot: TimeSlot, 
-    totalChargers: number = DEFAULT_CHARGERS_PER_STATION,
-    excludeReservationId?: string
+    options: {
+      totalChargers?: number
+      excludeReservationId?: string
+    } = {}
   ): { availableChargers: number; conflicts: ReservationConflict[] } {
+    const { totalChargers = DEFAULT_CHARGERS_PER_STATION, excludeReservationId } = options
     const reservations = this.getReservationsForStation(stationId)
       .filter(r => r.id !== excludeReservationId && r.status !== 'CANCELLED')
 
@@ -256,7 +259,7 @@ export class ReservationManager {
       const availability = this.checkAvailability(
         stationId, 
         { start: slotStart, end: slotEnd }, 
-        totalChargers
+        { totalChargers }
       )
 
       timeSlots.push({
