@@ -1,11 +1,23 @@
+"use client"
+
 import * as React from 'react'
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { IoMdExit } from "react-icons/io";
+import { FaUser } from "react-icons/fa";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navbar() {
+    const { user, isAuthenticated, logout } = useAuth()
+    const router = useRouter()
 
-    const navLinks = [
+    const handleSignOut = () => {
+        logout()
+        router.push('/')
+    }
+
+    const authenticatedNavLinks = [
         {
             label: "Schedule",
             href: "/schedule",
@@ -18,12 +30,24 @@ export default function Navbar() {
             label: "Dashboard",
             href: "/dashboard",
         },
+    ]
+
+    const unauthenticatedNavLinks = [
         {
-            label: "Sign Out",
-            icon: <IoMdExit />,
-            href: "/signout",
+            label: "Map",
+            href: "/map",
         },
-    ];
+        {
+            label: "Login",
+            href: "/login",
+        },
+        {
+            label: "Register",
+            href: "/register",
+        },
+    ]
+
+    const navLinks = isAuthenticated ? authenticatedNavLinks : unauthenticatedNavLinks;
 
     return (
         <div className="sticky w-full bg-[#FCA311] text-[#14213D] px-4 py-4 flex items-center justify-between">
@@ -39,9 +63,29 @@ export default function Navbar() {
                         className="text-xl pointer-events-auto font-semibold hover:text-[#14213d]/90 hover:scale-105 transition-transform duration-150 flex items-center gap-1"
                         href={link.href}>
                         {link.label}
-                        {link.icon}
                     </Link>
                 ))}
+                
+                {isAuthenticated && user && (
+                    <>
+                        <div className="flex items-center gap-2 text-lg">
+                            <FaUser className="h-4 w-4" />
+                            <span>{user.username}</span>
+                            {user.isOperator && (
+                                <span className="bg-[#14213d] text-[#FCA311] px-2 py-1 rounded text-xs font-bold">
+                                    OPERATOR
+                                </span>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleSignOut}
+                            className="text-xl pointer-events-auto font-semibold hover:text-[#14213d]/90 hover:scale-105 transition-transform duration-150 flex items-center gap-1"
+                        >
+                            Sign Out
+                            <IoMdExit />
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );

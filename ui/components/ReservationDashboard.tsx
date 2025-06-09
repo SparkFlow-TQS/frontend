@@ -1,54 +1,104 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { FaCalendarAlt, FaBolt, FaClock, FaTrash, FaCheck } from 'react-icons/fa'
+import { FaCalendarAlt, FaBolt, FaClock, FaTrash, FaCheck, FaSync } from 'react-icons/fa'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Reservation } from '@/types'
+import { Reservation, ReservationDisplayStatus, formatRecurringDays } from '@/types'
 import { ReservationManager } from '@/lib/reservations'
+import { BookingService } from '@/lib/bookingService'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ReservationDashboard() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
+  const [useApi, setUseApi] = useState(true)
+  const { user } = useAuth()
 
   useEffect(() => {
     loadReservations()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, useApi])
 
-  const loadReservations = () => {
+  const loadReservations = async () => {
     setLoading(true)
     try {
-      const allReservations = ReservationManager.getAllReservations()
-      // Sort by creation date, newest first
-      const sortedReservations = allReservations.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      setReservations(sortedReservations)
+      if (useApi && user?.id) {
+        // Try to load from API first
+        const apiReservations = await BookingService.getAllReservations(parseInt(user.id))
+        setReservations(apiReservations)
+      } else {
+        // Fallback to localStorage
+        const allReservations = ReservationManager.getAllReservations()
+        // Sort by creation date, newest first
+        const sortedReservations = allReservations.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        setReservations(sortedReservations)
+      }
     } catch (error) {
       console.error('Error loading reservations:', error)
+      // Fallback to localStorage on API error
+      if (useApi) {
+        console.log('Falling back to localStorage...')
+        setUseApi(false)
+        const allReservations = ReservationManager.getAllReservations()
+        const sortedReservations = allReservations.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        setReservations(sortedReservations)
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleStatusChange = (reservationId: string, newStatus: Reservation['status']) => {
-    const success = ReservationManager.updateReservationStatus(reservationId, newStatus)
-    if (success) {
-      loadReservations() // Reload to reflect changes
+  const handleStatusChange = async (reservationId: string, newStatus: ReservationDisplayStatus) => {
+    try {
+      if (useApi && user?.id) {
+        const success = await BookingService.updateReservationStatus()
+        if (success) {
+          loadReservations() // Reload to reflect changes
+        } else {
+          console.warn('API status update not implemented, falling back to localStorage')
+          const success = ReservationManager.updateReservationStatus(reservationId, newStatus)
+          if (success) {
+            loadReservations()
+          }
+        }
+      } else {
+        const success = ReservationManager.updateReservationStatus(reservationId, newStatus)
+        if (success) {
+          loadReservations() // Reload to reflect changes
+        }
+      }
+    } catch (error) {
+      console.error('Error updating reservation status:', error)
     }
   }
 
-  const handleDeleteReservation = (reservationId: string) => {
+  const handleDeleteReservation = async (reservationId: string) => {
     if (confirm('Are you sure you want to cancel this reservation?')) {
-      const success = ReservationManager.deleteReservation(reservationId)
-      if (success) {
-        loadReservations() // Reload to reflect changes
+      try {
+        if (useApi && user?.id) {
+          const success = await BookingService.cancelReservation(reservationId)
+          if (success) {
+            loadReservations() // Reload to reflect changes
+          }
+        } else {
+          const success = ReservationManager.deleteReservation(reservationId)
+          if (success) {
+            loadReservations() // Reload to reflect changes
+          }
+        }
+      } catch (error) {
+        console.error('Error cancelling reservation:', error)
       }
     }
   }
 
-  const getStatusColor = (status: Reservation['status']) => {
+  const getStatusColor = (status: ReservationDisplayStatus) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       case 'confirmed': return 'bg-blue-100 text-blue-800'
@@ -76,13 +126,13 @@ export default function ReservationDashboard() {
 
   const getUpcomingReservations = () => {
     return reservations.filter(r => 
-      r.timeSlot.start > new Date() && r.status !== 'cancelled'
+      r.timeSlot.start > new Date() && r.displayStatus !== 'cancelled'
     )
   }
 
   const getPastReservations = () => {
     return reservations.filter(r => 
-      r.timeSlot.end < new Date() || r.status === 'cancelled' || r.status === 'completed'
+      r.timeSlot.end < new Date() || r.displayStatus === 'cancelled' || r.displayStatus === 'completed'
     )
   }
 
@@ -114,8 +164,24 @@ export default function ReservationDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#14213d]">My Reservations</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-[#14213d]">My Reservations</h2>
+          <p className="text-sm text-gray-600">
+            {useApi ? 
+              (user?.id ? 'Loading from Station Service API' : 'API mode (not authenticated)') : 
+              'Loading from local storage'
+            }
+          </p>
+        </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setUseApi(!useApi)}
+            className={useApi ? 'bg-blue-50 border-blue-300' : 'bg-gray-50'}
+          >
+            {useApi ? 'Switch to Local' : 'Switch to API'}
+          </Button>
           <Button variant="outline" size="sm" onClick={generateDemoData}>
             Add Demo Data
           </Button>
@@ -156,7 +222,7 @@ export default function ReservationDashboard() {
               <div>
                 <p className="text-sm text-gray-600">Completed</p>
                 <p className="text-2xl font-bold">
-                  {reservations.filter(r => r.status === 'completed').length}
+                  {reservations.filter(r => r.displayStatus === 'completed').length}
                 </p>
               </div>
             </div>
@@ -189,9 +255,15 @@ export default function ReservationDashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold">{reservation.stationName}</h4>
-                        <Badge className={getStatusColor(reservation.status)}>
-                          {reservation.status}
+                        <Badge className={getStatusColor(reservation.displayStatus)}>
+                          {reservation.displayStatus}
                         </Badge>
+                        {reservation.recurringDays && reservation.recurringDays.size > 0 && (
+                          <Badge variant="outline" className="text-purple-600 border-purple-600">
+                            <FaSync className="h-3 w-3 mr-1" />
+                            {formatRecurringDays(reservation.recurringDays)}
+                          </Badge>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
@@ -213,7 +285,7 @@ export default function ReservationDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {reservation.status === 'pending' && (
+                      {reservation.displayStatus === 'pending' && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -251,9 +323,15 @@ export default function ReservationDashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold">{reservation.stationName}</h4>
-                        <Badge className={getStatusColor(reservation.status)}>
-                          {reservation.status}
+                        <Badge className={getStatusColor(reservation.displayStatus)}>
+                          {reservation.displayStatus}
                         </Badge>
+                        {reservation.recurringDays && reservation.recurringDays.size > 0 && (
+                          <Badge variant="outline" className="text-purple-600 border-purple-600">
+                            <FaSync className="h-3 w-3 mr-1" />
+                            {formatRecurringDays(reservation.recurringDays)}
+                          </Badge>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
@@ -284,18 +362,14 @@ export default function ReservationDashboard() {
 
       {/* Empty State */}
       {reservations.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <FaCalendarAlt className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No reservations yet</h3>
-            <p className="text-gray-600 mb-4">
-              Start by finding a charging station on the map and making your first reservation.
-            </p>
-            <Button onClick={generateDemoData}>
-              Add Demo Data
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12">
+          <FaCalendarAlt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No reservations yet</h3>
+          <p className="text-gray-500 mb-4">Start by booking a charging session at a station.</p>
+          <Button onClick={generateDemoData}>
+            Add Demo Data
+          </Button>
+        </div>
       )}
     </div>
   )

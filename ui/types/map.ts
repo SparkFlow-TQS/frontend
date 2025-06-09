@@ -30,13 +30,13 @@ export interface LeafletMapProps {
 }
 
 export interface ChargingMapProps {
-  zoom: number
-  center: [number, number]
-  stations?: ChargingStation[]
-  searchCenter?: [number, number] | null
-  searchRadius?: number
-  onSearchCenterChange?: (lat: number, lng: number) => void
-  isPinpointMode?: boolean
+  readonly zoom: number
+  readonly center: [number, number]
+  readonly stations?: ChargingStation[]
+  readonly searchCenter?: [number, number] | null
+  readonly searchRadius?: number
+  readonly onSearchCenterChange?: (lat: number, lng: number) => void
+  readonly isPinpointMode?: boolean
 }
 
 export interface MapClickHandlerProps {
