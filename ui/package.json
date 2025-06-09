@@ -13,6 +13,7 @@
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
     "test:ci": "playwright test --config=playwright-ci.config.ts",
+    "test:stable": "playwright test --config=playwright-stable.config.ts",
     "test:ci-all": "playwright test --reporter=github --max-failures=10"
   },
   "dependencies": {

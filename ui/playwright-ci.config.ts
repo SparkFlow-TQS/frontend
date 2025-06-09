@@ -16,12 +16,12 @@ export default defineConfig({
   workers: 2,
   /* Optimized reporter for GitHub Actions */
   reporter: [['github'], ['html', { outputFolder: 'playwright-report' }]],
-  /* Strict timeout limits */
-  globalTimeout: 300000, // 5 minutes total
-  timeout: 10000, // 10 seconds per test
+  /* Ultra-fast timeout limits for CI */
+  globalTimeout: 180000, // 3 minutes total
+  timeout: 8000, // 8 seconds per test
   /* Expect timeout for assertions */
   expect: {
-    timeout: 2000, // 2 seconds for assertions
+    timeout: 1500, // 1.5 seconds for assertions
   },
   
   /* Test matching - only run essential tests */
@@ -39,9 +39,9 @@ export default defineConfig({
     screenshot: 'off',
     video: 'off',
     
-    /* Aggressive timeouts */
-    navigationTimeout: 5000,
-    actionTimeout: 2000,
+    /* Ultra-aggressive timeouts for CI */
+    navigationTimeout: 4000,
+    actionTimeout: 1500,
     
     /* Disable animations */
     hasTouch: false,
@@ -77,8 +77,8 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: true, // Reuse existing server if available
-    timeout: 45000, // 45 seconds max to start
+    reuseExistingServer: true, // Reuse existing server to avoid conflicts
+    timeout: 30000, // 30 seconds max to start
     stdout: 'pipe',
     stderr: 'pipe',
   },

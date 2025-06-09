@@ -1,0 +1,87 @@
+# Optimized GitHub Actions workflow for fast Playwright testing
+# Place this in .github/workflows/playwright.yml in your repository
+
+name: Playwright Tests
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  # Fast essential tests (< 30 seconds)
+  test-essential:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: frontend/ui/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: frontend/ui
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Install Playwright Browsers (chromium only)
+      working-directory: frontend/ui
+      run: npx playwright install chromium --with-deps
+    
+    - name: Run essential Playwright tests
+      working-directory: frontend/ui
+      run: npm run test:ci
+      env:
+        CI: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-essential
+        path: frontend/ui/playwright-report/
+        retention-days: 3
+
+  # Comprehensive tests (only on main branch)
+  test-full:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: frontend/ui/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: frontend/ui
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Install Playwright Browsers
+      working-directory: frontend/ui
+      run: npx playwright install chromium --with-deps
+    
+    - name: Run stable Playwright tests
+      working-directory: frontend/ui
+      run: npm run test:stable
+      env:
+        CI: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-full
+        path: frontend/ui/playwright-report/
+        retention-days: 7
