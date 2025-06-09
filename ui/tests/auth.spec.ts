@@ -29,10 +29,13 @@ test.describe('Authentication', () => {
   test('should show validation errors for empty login form', async ({ page }) => {
     await page.goto('/login')
     
-    await page.getByRole('button', { name: 'Sign In' }).click()
+    // Button should be disabled when form is empty
+    const signInButton = page.getByRole('button', { name: 'Sign In' })
+    await expect(signInButton).toBeDisabled()
     
-    // Check that form doesn't submit with empty fields
+    // Check that form fields are visible and empty
     await expect(page.getByPlaceholder('Enter your email or username')).toBeVisible()
+    await expect(page.getByPlaceholder('Enter your password')).toBeVisible()
   })
 
   test('should navigate between login and register pages', async ({ page }) => {
