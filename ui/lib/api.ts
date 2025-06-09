@@ -3,7 +3,7 @@ import { ChargingStation } from '@/types'
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 export class StationAPI {
-  private static baseURL = `${API_BASE_URL}/station/api/v1/stations`
+  private static readonly baseURL = `${API_BASE_URL}/station/api/v1/stations`
 
   static async getAllStations(): Promise<ChargingStation[]> {
     try {
@@ -168,7 +168,7 @@ export interface BookingDTO {
 }
 
 export class StatisticsAPI {
-  private static baseURL = `${API_BASE_URL}/station/api/statistics`
+  private static readonly baseURL = `${API_BASE_URL}/station/api/statistics`
 
   static async getCurrentMonthStats(): Promise<CurrentMonthStats> {
     try {
