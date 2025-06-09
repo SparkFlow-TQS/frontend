@@ -398,14 +398,14 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "This month's costs",
-      value: `€${monthlyStats.totalCost}`,
+      value: `€${monthlyStats.totalCost.toFixed(2)}`,
       icon: <FaDollarSign className="h-5 w-5 text-white" />,
-      detail: `Avg per session: €${monthlyStats.avgCostPerSession}`,
+      detail: `Avg per session: €${monthlyStats.avgCostPerSession.toFixed(2)}`,
       change: getCostChangeIndicator()
     },
     {
       title: "This month's kWh",
-      value: `${monthlyStats.estimatedKwh} kWh`,
+      value: `${monthlyStats.estimatedKwh.toFixed(2)} kWh`,
       icon: <FaBolt className="h-5 w-5 text-white" />,
       detail: `~${(monthlyStats.estimatedKwh * CO2_EQUIVALENT_FACTOR).toFixed(2)} kg CO2 equivalent`,
       change: '+'
@@ -419,7 +419,7 @@ export default function DashboardPage() {
     },
     {
       title: "CO2 Saved",
-      value: `${monthlyStats.co2Saved} kg`,
+      value: `${monthlyStats.co2Saved.toFixed(2)} kg`,
       icon: <FaLeaf className="h-5 w-5 text-white" />,
       detail: `Equivalent to ${(monthlyStats.co2Saved * GASOLINE_EQUIVALENT_FACTOR).toFixed(1)} L gasoline saved`,
       change: '+'
@@ -604,7 +604,7 @@ export default function DashboardPage() {
                       <div className="font-semibold">{hoveredData.data.fullMonth ?? 'Unknown Month'}</div>
                       <div>Cost: €{(hoveredData.data.cost ?? 0).toFixed(2)}</div>
                       <div>Sessions: {hoveredData.data.sessions ?? 0}</div>
-                      <div>Energy: {hoveredData.data.kwh ?? 0} kWh</div>
+                      <div>Energy: {(hoveredData.data.kwh ?? 0).toFixed(2)} kWh</div>
                     </div>
                   )}
                 </div>
