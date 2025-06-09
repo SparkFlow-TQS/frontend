@@ -10,6 +10,7 @@ import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
 import { Reservation, BookingStatus, backendToDisplayStatus } from "@/types"
 import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, BookingDTO } from "@/lib/api"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 // Constants for calculations
 const DEFAULT_CHARGING_POWER_KW = 22 // Average charging power in kW
@@ -484,10 +485,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col w-screen overflow-hidden">
-      <header>
-        <Navbar />
-      </header>
+    <ProtectedRoute>
+      <div className="flex h-screen flex-col w-screen overflow-hidden">
+        <header>
+          <Navbar />
+        </header>
       <main className="p-8 h-full flex flex-row items-start bg-[#14213d] text-[#FCA311] overflow-y-auto">
         {/* Sidebar Navigation */}
         <div className="align-middle p-10 justify-center flex flex-col items-center w-1/4 text-center sticky top-0">
@@ -802,6 +804,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   )
 }
