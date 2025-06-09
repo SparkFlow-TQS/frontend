@@ -217,8 +217,8 @@ export default function HistoryPage() {
                     size="sm"
                     onClick={() => setTimeFilter(tab.key as 'all' | '7days' | '30days' | '90days')}
                     className={timeFilter === tab.key ? 
-                      "bg-[#FFA500] text-black" : 
-                      "text-white border-white hover:bg-white/10"
+                      "bg-[#FFA500] text-black border-[#FFA500]" : 
+                      "bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
                     }
                   >
                     {tab.label}
@@ -239,8 +239,8 @@ export default function HistoryPage() {
                     size="sm"
                     onClick={() => setStatusFilter(tab.key as 'all' | 'completed' | 'cancelled')}
                     className={statusFilter === tab.key ? 
-                      "bg-[#FFA500] text-black" : 
-                      "text-white border-white hover:bg-white/10"
+                      "bg-[#FFA500] text-black border-[#FFA500]" : 
+                      "bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
                     }
                   >
                     {tab.label}
