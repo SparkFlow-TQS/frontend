@@ -223,6 +223,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth()
   }, [])
 
+  const refreshToken = useCallback(async (): Promise<void> => {
+    if (!state.tokens?.refreshToken) {
+      throw new Error('No refresh token available')
+    }
+
+    try {
+      const response = await AuthAPI.refreshToken({
+        refreshToken: state.tokens.refreshToken,
+      })
+      
+      const newTokens: TokenData = {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresAt: calculateTokenExpiration(response.accessToken),
+      }
+      
+      saveTokensToStorage(newTokens)
+      saveUserToStorage(response.user)
+      
+      dispatch({ type: 'AUTH_UPDATE_TOKENS', payload: newTokens })
+    } catch (error) {
+      console.error('Token refresh failed:', error)
+      logout()
+      throw error
+    }
+  }, [state.tokens?.refreshToken])
+
   // Auto-refresh token before expiration
   useEffect(() => {
     if (state.tokens && state.status === 'authenticated') {
@@ -242,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => clearTimeout(timeout)
       }
     }
-  }, [state.tokens, refreshToken, state.status])
+  }, [state.tokens, state.status, refreshToken])
 
   const login = async (credentials: LoginRequest): Promise<void> => {
     dispatch({ type: 'AUTH_LOADING' })
@@ -307,32 +334,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'AUTH_LOGOUT' })
   }
 
-  const refreshToken = useCallback(async (): Promise<void> => {
-    if (!state.tokens?.refreshToken) {
-      throw new Error('No refresh token available')
-    }
-
-    try {
-      const response = await AuthAPI.refreshToken({
-        refreshToken: state.tokens.refreshToken,
-      })
-      
-      const newTokens: TokenData = {
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        expiresAt: calculateTokenExpiration(response.accessToken),
-      }
-      
-      saveTokensToStorage(newTokens)
-      saveUserToStorage(response.user)
-      
-      dispatch({ type: 'AUTH_UPDATE_TOKENS', payload: newTokens })
-    } catch (error) {
-      console.error('Token refresh failed:', error)
-      logout()
-      throw error
-    }
-  }, [state.tokens?.refreshToken])
 
   const isOperator = (): boolean => {
     return state.user?.operator ?? false
