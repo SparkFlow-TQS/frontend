@@ -15,6 +15,11 @@ import {
 const TOKEN_STORAGE_KEY = 'sparkflow_tokens'
 const USER_STORAGE_KEY = 'sparkflow_user'
 
+// Helper function to generate user ID from username and email
+const generateUserId = (username: string, email: string): string => {
+  return btoa(`${username}:${email}`).replace(/[/+=]/g, '').slice(0, 16)
+}
+
 // Auth state interface
 interface AuthState {
   user: User | null
@@ -199,13 +204,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               expiresAt: calculateTokenExpiration(refreshResponse.accessToken),
             }
             
+            const user: User = {
+              id: generateUserId(refreshResponse.username, refreshResponse.email),
+              username: refreshResponse.username,
+              email: refreshResponse.email,
+              isOperator: refreshResponse.isOperator,
+            }
+            
             saveTokensToStorage(newTokens)
-            saveUserToStorage(refreshResponse.user)
+            saveUserToStorage(user)
             
             dispatch({
               type: 'AUTH_SUCCESS',
               payload: {
-                user: refreshResponse.user,
+                user,
                 tokens: newTokens,
               },
             })
@@ -239,8 +251,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expiresAt: calculateTokenExpiration(response.accessToken),
       }
       
+      const user: User = {
+        id: generateUserId(response.username, response.email),
+        username: response.username,
+        email: response.email,
+        isOperator: response.isOperator,
+      }
+      
       saveTokensToStorage(newTokens)
-      saveUserToStorage(response.user)
+      saveUserToStorage(user)
       
       dispatch({ type: 'AUTH_UPDATE_TOKENS', payload: newTokens })
     } catch (error) {
@@ -283,13 +302,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expiresAt: calculateTokenExpiration(response.accessToken),
       }
       
+      const user: User = {
+        id: generateUserId(response.username, response.email),
+        username: response.username,
+        email: response.email,
+        isOperator: response.isOperator,
+      }
+      
       saveTokensToStorage(tokens)
-      saveUserToStorage(response.user)
+      saveUserToStorage(user)
       
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
-          user: response.user,
+          user,
           tokens,
         },
       })
@@ -312,13 +338,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expiresAt: calculateTokenExpiration(response.accessToken),
       }
       
+      const user: User = {
+        id: generateUserId(response.username, response.email),
+        username: response.username,
+        email: response.email,
+        isOperator: response.isOperator,
+      }
+      
       saveTokensToStorage(tokens)
-      saveUserToStorage(response.user)
+      saveUserToStorage(user)
       
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
-          user: response.user,
+          user,
           tokens,
         },
       })

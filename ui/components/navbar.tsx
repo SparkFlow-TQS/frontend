@@ -17,7 +17,6 @@ export default function Navbar() {
         router.push('/')
     }
 
-
     const authenticatedNavLinks = [
         {
             label: "Schedule",
@@ -86,7 +85,6 @@ export default function Navbar() {
                             <IoMdExit />
                         </button>
                     </>
-
                 )}
             </div>
         </div>

@@ -5,7 +5,7 @@ test.describe('Authentication', () => {
     await page.goto('/login')
     
     // Check page elements
-    await expect(page.locator('text=SparkFlow')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'SparkFlow' })).toBeVisible()
     await expect(page.locator('text=Welcome Back')).toBeVisible()
     await expect(page.getByPlaceholder('Enter your email or username')).toBeVisible()
     await expect(page.getByPlaceholder('Enter your password')).toBeVisible()
@@ -17,7 +17,7 @@ test.describe('Authentication', () => {
     await page.goto('/register')
     
     // Check page elements
-    await expect(page.locator('text=SparkFlow')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'SparkFlow' })).toBeVisible()
     await expect(page.locator('text=Get Started')).toBeVisible()
     await expect(page.getByPlaceholder('Choose a username')).toBeVisible()
     await expect(page.getByPlaceholder('Enter your email')).toBeVisible()
@@ -29,10 +29,13 @@ test.describe('Authentication', () => {
   test('should show validation errors for empty login form', async ({ page }) => {
     await page.goto('/login')
     
-    await page.getByRole('button', { name: 'Sign In' }).click()
+    // Button should be disabled when form is empty
+    const signInButton = page.getByRole('button', { name: 'Sign In' })
+    await expect(signInButton).toBeDisabled()
     
-    // Check that form doesn't submit with empty fields
+    // Check that form fields are visible and empty
     await expect(page.getByPlaceholder('Enter your email or username')).toBeVisible()
+    await expect(page.getByPlaceholder('Enter your password')).toBeVisible()
   })
 
   test('should navigate between login and register pages', async ({ page }) => {

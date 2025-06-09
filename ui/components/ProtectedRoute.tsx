@@ -46,6 +46,5 @@ export default function ProtectedRoute({ children, requireOperator = false }: Pr
     return null // Will redirect to dashboard
   }
 
-
   return <>{children}</>
 }

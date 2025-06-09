@@ -114,6 +114,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const isOperator = () => {
+    return user?.isOperator ?? false
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     logout,
     refreshToken,
+    isOperator,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
