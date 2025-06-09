@@ -153,7 +153,7 @@ export default function MapPage() {
         (position) => {
           const { latitude, longitude } = position.coords
           const userCoords: [number, number] = [latitude, longitude]
-          console.log('User location obtained:', userCoords)
+          // User location obtained successfully
           setUserLocation(userCoords)
           setCenter(userCoords) // Center map on user's location
           setLoading(false)
@@ -185,11 +185,11 @@ export default function MapPage() {
         setError(null)
         
         // Use search center if available, otherwise user location, otherwise default center
-        const [lat, lng] = searchCenter || userLocation || center
-        const radius = filters?.maxDistance || 25 // Use filter radius or default 25km
+        const [lat, lng] = searchCenter ?? userLocation ?? center
+        const radius = filters?.maxDistance ?? 25 // Use filter radius or default 25km
         
         const stationsData = await StationAPI.getNearbyStations(lat, lng, radius)
-        console.log('Stations data:', stationsData)
+        // Stations data fetched successfully
         setStations(stationsData)
         setFilteredStations(stationsData) // Initialize filtered stations
       } catch (err) {
@@ -290,7 +290,7 @@ export default function MapPage() {
 
   const handleNearestStations = () => {
     // Use search center (pinpoint) if available, otherwise user location
-    const referenceLocation = searchCenter || userLocation
+    const referenceLocation = searchCenter ?? userLocation
     
     if (!referenceLocation) {
       setError('Location not available. Please enable location services or set a pinpoint.')
@@ -355,9 +355,9 @@ export default function MapPage() {
   useEffect(() => {
     const fetchTotalCount = async () => {
       try {
-        console.log('Fetching total station count...')
+        // Fetching total station count
         const count = await StationAPI.getTotalStationCount()
-        console.log('Total station count received:', count)
+        // Total station count received
         setTotalStationCount(count)
       } catch (err) {
         console.error('Failed to fetch total station count:', err)
@@ -427,7 +427,7 @@ export default function MapPage() {
             center={center}
             stations={filteredStations}
             searchCenter={searchCenter}
-            searchRadius={filters?.maxDistance || 25}
+            searchRadius={filters?.maxDistance ?? 25}
             onSearchCenterChange={handleSearchCenterChange}
             isPinpointMode={isPinpointMode}
           />
@@ -477,24 +477,25 @@ export default function MapPage() {
               {showAutocomplete && autocompleteResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-30 max-h-60 overflow-y-auto">
                   {autocompleteResults.map((result, index) => (
-                    <div
+                    <button
                       key={result.id}
-                      className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 ${
+                      className={`w-full text-left p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 border-0 ${
                         index === selectedSuggestionIndex ? 'bg-gray-100' : ''
                       }`}
                       onMouseDown={(e) => e.preventDefault()} // Prevent blur
                       onClick={() => handleAutocompleteSelect(result)}
                       onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                      aria-label={`Select station ${result.externalId ?? result.id} - ${result.name}`}
                     >
                       <div className="text-black">
                         <div className="font-medium text-sm">
-                          {result.externalId || result.id} - {result.name}
+                          {result.externalId ?? result.id} - {result.name}
                         </div>
                         <div className="text-xs text-gray-600">
                           {result.address}
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                          <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
+                          <span>{result.power ?? 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                           <span className={`px-1 py-0.5 rounded text-xs ${
                             result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
@@ -502,7 +503,7 @@ export default function MapPage() {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -536,17 +537,17 @@ export default function MapPage() {
             )}
             {searchCenter && (
               <span className="ml-1 text-blue-600">
-                within {filters?.maxDistance || 25}km of search location
+                within {filters?.maxDistance ?? 25}km of search location
               </span>
             )}
             {!searchCenter && userLocation && (
               <span className="ml-1 text-blue-600">
-                within {filters?.maxDistance || 25}km of your location
+                within {filters?.maxDistance ?? 25}km of your location
               </span>
             )}
             {filters && Object.values(filters).some(v => 
               Array.isArray(v) ? v.length > 0 : 
-              (v !== null && v !== undefined && v !== (filters?.maxDistance || 25))
+              (v !== null && v !== undefined && v !== (filters?.maxDistance ?? 25))
             ) && (
               <span className="ml-2 text-orange-600">(filtered)</span>
             )}

@@ -27,7 +27,15 @@ export default function ChargingMap({
   
   const handleNavigate = (lat: number, lng: number) => {
     if (typeof window !== 'undefined') {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank')
+      // Validate coordinates before opening external URL
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        console.error('Invalid coordinates for navigation')
+        return
+      }
+      const newWindow = window.open('', '_blank', 'noopener,noreferrer')
+      if (newWindow) {
+        newWindow.location.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+      }
     }
   }
 

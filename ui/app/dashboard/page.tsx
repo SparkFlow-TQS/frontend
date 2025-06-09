@@ -8,9 +8,20 @@ import Link from "next/link"
 import Navbar from "@/components/navbar"
 import ReservationDashboard from "@/components/ReservationDashboard"
 import { ReservationManager } from "@/lib/reservations"
-import { Reservation } from "@/types"
+import { Reservation, BookingStatus, backendToDisplayStatus } from "@/types"
 import { StatisticsAPI, CurrentMonthStats, MonthlyData, WeeklyData, BookingDTO } from "@/lib/api"
 import ProtectedRoute from "@/components/ProtectedRoute"
+
+// Constants for calculations
+const DEFAULT_CHARGING_POWER_KW = 22 // Average charging power in kW
+const CO2_SAVED_PER_KWH = 0.4 // kg CO2 saved per kWh
+const CO2_EQUIVALENT_FACTOR = 0.35 // kg CO2 equivalent factor
+const GASOLINE_EQUIVALENT_FACTOR = 0.43 // L gasoline equivalent per kg CO2
+
+// Type guard for BookingStatus
+const isValidBookingStatus = (status: string): status is BookingStatus => {
+  return ['ACTIVE', 'CANCELLED', 'COMPLETED'].includes(status)
+}
 
 interface HoveredData {
   type: 'stat' | 'month' | 'week' | 'trend'
@@ -23,7 +34,7 @@ interface HoveredData {
     duration?: number
     kwh?: number
     height?: number
-    reservations?: BookingDTO[]
+    reservations?: Reservation[] | BookingDTO[]
     week?: string
     dateRange?: string
     title?: string
@@ -33,6 +44,35 @@ interface HoveredData {
   x?: number
   y?: number
 }
+
+// Helper function to convert Reservation to BookingDTO for type compatibility
+const reservationToBookingDTO = (reservation: Reservation): BookingDTO => ({
+  id: parseInt(reservation.id.replace(/\D/g, '')) || Math.abs(crypto.randomUUID().slice(0, 8).split('').reduce((a, c) => a + c.charCodeAt(0), 0)), // Extract numbers or generate secure random ID
+  userId: reservation.userId ?? 0,
+  stationId: reservation.stationId,
+  startTime: reservation.timeSlot.start.toISOString(),
+  endTime: reservation.timeSlot.end.toISOString(),
+  cost: reservation.estimatedCost ?? 0,
+  status: reservation.status
+})
+
+// Helper function to convert BookingDTO back to Reservation for UI compatibility
+const bookingDTOToReservation = (booking: BookingDTO): Reservation => ({
+  id: booking.id.toString(),
+  stationId: booking.stationId,
+  stationName: `Station ${booking.stationId}`, // Default name since BookingDTO doesn't include it
+  userId: booking.userId,
+  timeSlot: {
+    start: new Date(booking.startTime),
+    end: new Date(booking.endTime)
+  },
+  chargerCount: 1, // Default value
+  status: isValidBookingStatus(booking.status) ? booking.status : 'ACTIVE', // Safe type check
+  displayStatus: backendToDisplayStatus(isValidBookingStatus(booking.status) ? booking.status : 'ACTIVE'), // Safe type conversion
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  estimatedCost: booking.cost
+})
 
 export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
@@ -69,11 +109,12 @@ export default function DashboardPage() {
         setUsingFallbackData(false)
         
       } catch (apiError: unknown) {
-        const error = apiError as { message?: string; status?: number }
         console.error('Error loading statistics from API:', apiError)
         
         // Check if it's a 403 unauthorized error
-        if (error.message?.includes('403') || error.status === 403) {
+        const errorMessage = apiError instanceof Error ? apiError.message : String(apiError)
+        const errorStatus = apiError && typeof apiError === 'object' && 'status' in apiError ? (apiError as { status: number }).status : null
+        if (errorMessage.includes('403') || errorStatus === 403) {
           setIsUnauthorized(true)
           setError('Acesso negado. Você precisa estar autenticado para visualizar as estatísticas.')
           setLoading(false)
@@ -81,7 +122,6 @@ export default function DashboardPage() {
         }
         
         // For other errors, fall back to localStorage data
-        console.log('Falling back to localStorage data due to API error')
         setUsingFallbackData(true)
         loadReservationsFromStorage()
       }
@@ -111,7 +151,11 @@ export default function DashboardPage() {
     // Listen for custom events from other components
     const handleReservationUpdate = () => {
       if (usingFallbackData) {
+        // Force reload to ensure latest data after reservation changes
         loadReservationsFromStorage()
+        // Trigger a re-calculation of statistics to reflect changes
+        setLoading(true)
+        setTimeout(() => setLoading(false), 100) // Brief loading state to show update
       }
     }
 
@@ -147,13 +191,13 @@ export default function DashboardPage() {
              reservation.displayStatus !== 'cancelled'
     })
 
-    const totalCost = currentMonthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+    const totalCost = currentMonthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost ?? 0), 0)
     const totalSessions = currentMonthReservations.length
     const estimatedKwh = currentMonthReservations.reduce((sum, reservation) => {
       const duration = (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
-      return sum + (duration * 22) // Assuming 22kW average charging power
+      return sum + (duration * DEFAULT_CHARGING_POWER_KW)
     }, 0)
-    const co2Saved = estimatedKwh * 0.4 // Assuming 0.4kg CO2 saved per kWh
+    const co2Saved = estimatedKwh * CO2_SAVED_PER_KWH
     const avgCostPerSession = totalSessions > 0 ? totalCost / totalSessions : 0
 
     return {
@@ -172,7 +216,7 @@ export default function DashboardPage() {
       const maxCost = Math.max(...apiMonthlyStats.map(d => d.cost), 1)
       return apiMonthlyStats.map(data => ({
         ...data,
-        height: (data.cost / maxCost) * 80 + 20 // 20-100% height range
+        height: (data.cost / maxCost) * 100
       }))
     }
 
@@ -192,12 +236,12 @@ export default function DashboardPage() {
                reservation.displayStatus !== 'cancelled'
       })
 
-      const cost = monthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+      const cost = monthReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost ?? 0), 0)
       const sessions = monthReservations.length
       const duration = monthReservations.reduce((sum, reservation) => {
         return sum + (new Date(reservation.timeSlot.end).getTime() - new Date(reservation.timeSlot.start).getTime()) / (1000 * 60 * 60)
       }, 0)
-      const kwh = duration * 22 // Assuming 22kW average
+      const kwh = duration * DEFAULT_CHARGING_POWER_KW
 
       monthlyData.push({
         month,
@@ -206,28 +250,15 @@ export default function DashboardPage() {
         sessions,
         duration,
         kwh,
-        reservations: monthReservations.map(r => ({
-          id: Math.random(), // Generate ID for compatibility
-          userId: 0,
-          stationId: 0,
-          startTime: r.timeSlot.start,
-          endTime: r.timeSlot.end,
-          cost: r.estimatedCost || 0,
-          status: r.displayStatus || 'unknown',
-          stationName: r.stationName,
-          timeSlot: r.timeSlot,
-          chargerCount: r.chargerCount,
-          displayStatus: r.displayStatus,
-          estimatedCost: r.estimatedCost
-        } as unknown as BookingDTO))
+        reservations: monthReservations.map(reservationToBookingDTO)
       })
     }
     
-    // Add height calculation for chart display
+    // Calculate heights for chart rendering
     const maxCost = Math.max(...monthlyData.map(d => d.cost), 1)
     return monthlyData.map(data => ({
       ...data,
-      height: (data.cost / maxCost) * 80 + 20 // 20-100% height range
+      height: (data.cost / maxCost) * 100
     }))
   }
 
@@ -238,7 +269,7 @@ export default function DashboardPage() {
       const maxSessions = Math.max(...apiWeeklyStats.map(d => d.sessions), 1)
       return apiWeeklyStats.map(data => ({
         ...data,
-        height: (data.sessions / maxSessions) * 80 + 20 // 20-100% height range
+        height: (data.sessions / maxSessions) * 100
       }))
     }
 
@@ -267,7 +298,7 @@ export default function DashboardPage() {
                reservation.displayStatus !== 'cancelled'
       })
 
-      const cost = weekReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost || 0), 0)
+      const cost = weekReservations.reduce((sum, reservation) => sum + (reservation.estimatedCost ?? 0), 0)
       const sessions = weekReservations.length
       
       weeklyData.push({
@@ -275,31 +306,18 @@ export default function DashboardPage() {
         sessions,
         cost,
         dateRange: `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
-        reservations: weekReservations.map(r => ({
-          id: Math.random(), // Generate ID for compatibility
-          userId: 0,
-          stationId: 0,
-          startTime: r.timeSlot.start,
-          endTime: r.timeSlot.end,
-          cost: r.estimatedCost || 0,
-          status: r.displayStatus || 'unknown',
-          stationName: r.stationName,
-          timeSlot: r.timeSlot,
-          chargerCount: r.chargerCount,
-          displayStatus: r.displayStatus,
-          estimatedCost: r.estimatedCost
-        } as unknown as BookingDTO))
+        reservations: weekReservations.map(reservationToBookingDTO)
       })
       
       weekStart.setDate(weekStart.getDate() + 7)
       weekNumber++
     }
     
-    // Add height calculation for chart display
+    // Calculate heights for chart rendering
     const maxSessions = Math.max(...weeklyData.map(d => d.sessions), 1)
     return weeklyData.map(data => ({
       ...data,
-      height: (data.sessions / maxSessions) * 80 + 20 // 20-100% height range
+      height: (data.sessions / maxSessions) * 100
     }))
   }
 
@@ -316,14 +334,14 @@ export default function DashboardPage() {
   }
 
   // Filter reservations based on selection
-  const getFilteredReservations = () => {
+  const getFilteredReservations = (): Reservation[] => {
     if (selectedMonth) {
       const monthData = monthlyData.find(m => m.month === selectedMonth)
-      return monthData?.reservations || []
+      return monthData?.reservations.map(bookingDTOToReservation) ?? []
     }
     if (selectedWeek) {
       const weekData = weeklyData.find(w => w.week === selectedWeek)
-      return weekData?.reservations || []
+      return weekData?.reservations.map(bookingDTOToReservation) ?? []
     }
     return []
   }
@@ -333,20 +351,61 @@ export default function DashboardPage() {
   const weeklyData = generateWeeklyData()
   const filteredReservations = getFilteredReservations()
 
+  // Helper function to calculate cost change indicator
+  const getCostChangeIndicator = (): string => {
+    if (monthlyData.length <= 1) return '+'
+    
+    const currentMonthCost = monthlyData[11]?.cost ?? 0
+    const previousMonthCost = monthlyData[10]?.cost ?? 0
+    
+    return currentMonthCost > previousMonthCost ? '+' : ''
+  }
+
+  // Chart styling helper methods
+  const getSelectedMonthBarStyle = (): string => 'bg-[#14213d] ring-2 ring-[#FFA500]'
+  const getDefaultMonthBarStyle = (): string => 'bg-[#FFA500] hover:bg-[#FFA500]/90'
+  
+  const getSelectedWeekBarStyle = (): string => 'bg-[#FFA500] ring-2 ring-[#14213d]'
+  const getDefaultWeekBarStyle = (): string => 'bg-[#14213d] hover:bg-[#14213d]/90'
+  
+  const getSelectedLabelStyle = (): string => 'text-[#FFA500] font-bold'
+  const getDefaultLabelStyle = (): string => 'hover:text-[#FFA500]'
+
+  // Helper methods for applying styles based on selection state
+  const getMonthBarStyle = (isSelected: boolean): string => 
+    isSelected ? getSelectedMonthBarStyle() : getDefaultMonthBarStyle()
+  
+  const getWeekBarStyle = (isSelected: boolean): string => 
+    isSelected ? getSelectedWeekBarStyle() : getDefaultWeekBarStyle()
+  
+  const getLabelStyle = (isSelected: boolean): string => 
+    isSelected ? getSelectedLabelStyle() : getDefaultLabelStyle()
+
+  // Helper function to get selected period title
+  const getSelectedPeriodTitle = (): string => {
+    if (selectedMonth) {
+      const monthData = monthlyData.find(m => m.month === selectedMonth)
+      return `${monthData?.fullMonth} Details`
+    }
+    if (selectedWeek) {
+      return `${selectedWeek} Details`
+    }
+    return ''
+  }
+
   const stats = [
     {
       title: "This month's costs",
       value: `€${monthlyStats.totalCost}`,
       icon: <FaDollarSign className="h-5 w-5 text-white" />,
       detail: `Avg per session: €${monthlyStats.avgCostPerSession}`,
-      change: monthlyData.length > 1 ? 
-        ((monthlyData[11]?.cost || 0) - (monthlyData[10]?.cost || 0)) > 0 ? '+' : '' : '+'
+      change: getCostChangeIndicator()
     },
     {
       title: "This month's kWh",
       value: `${monthlyStats.estimatedKwh} kWh`,
       icon: <FaBolt className="h-5 w-5 text-white" />,
-      detail: `~${(monthlyStats.estimatedKwh * 0.35).toFixed(2)} kg CO2 equivalent`,
+      detail: `~${(monthlyStats.estimatedKwh * CO2_EQUIVALENT_FACTOR).toFixed(2)} kg CO2 equivalent`,
       change: '+'
     },
     {
@@ -360,12 +419,12 @@ export default function DashboardPage() {
       title: "CO2 Saved",
       value: `${monthlyStats.co2Saved} kg`,
       icon: <FaLeaf className="h-5 w-5 text-white" />,
-      detail: `Equivalent to ${(monthlyStats.co2Saved * 0.43).toFixed(1)} L gasoline saved`,
+      detail: `Equivalent to ${(monthlyStats.co2Saved * GASOLINE_EQUIVALENT_FACTOR).toFixed(1)} L gasoline saved`,
       change: '+'
     }
   ]
 
-  const sidebar_items = [
+  const sidebarItems = [
     {
       title: "My Bookings",
       icon: <FaCalendar className="h-5 w-5 text-white" />,
@@ -434,8 +493,8 @@ export default function DashboardPage() {
       <main className="p-8 h-full flex flex-row items-start bg-[#14213d] text-[#FCA311] overflow-y-auto">
         {/* Sidebar Navigation */}
         <div className="align-middle p-10 justify-center flex flex-col items-center w-1/4 text-center sticky top-0">
-            {sidebar_items.map((items, index) => (
-              <Link key={index} href={items.href} className="w-full">
+            {sidebarItems.map((items) => (
+              <Link key={items.href} href={items.href} className="w-full">
                 <Card className="bg-[#FFA500] cursor-pointer hover:bg-[#FFA500]/90 transition-colors mb-4">
                   <CardContent className="p-4">
                     <h2 className="text-xl font-bold text-[#14213d]">{items.title}</h2>
@@ -447,11 +506,11 @@ export default function DashboardPage() {
         <div className="w-full px-10 max-h-full overflow-y-auto">
           {/* Interactive Stats Cards */}
           <div className="flex flex-row gap-4 mb-4 align-middle justify-center">
-            {stats.map((stat, index) => (
+            {stats.map((stat) => (
               <Card 
-                key={index} 
+                key={stat.title} 
                 className="bg-white rounded-lg shadow-md overflow-hidden w-1/4 flex align-middle hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
-                onMouseEnter={() => setHoveredData({ type: 'stat', index, data: stat })}
+                onMouseEnter={() => setHoveredData({ type: 'stat', data: stat })}
                 onMouseLeave={() => setHoveredData(null)}
               >
                 <CardContent className="flex flex-col relative">
@@ -464,7 +523,7 @@ export default function DashboardPage() {
                           <span className="ml-2 text-sm text-green-500">{stat.change}23%</span>
                         )}
                       </div>
-                      {hoveredData?.type === 'stat' && hoveredData?.index === index && (
+                      {hoveredData?.type === 'stat' && hoveredData?.data?.title === stat.title && (
                         <p className="text-xs text-gray-500 mt-1 animate-fade-in">
                           {stat.detail}
                         </p>
@@ -506,44 +565,42 @@ export default function DashboardPage() {
                 </div>
                 <div className="h-48 relative">
                   <div className="w-full h-full flex items-end justify-between px-4">
-                    {monthlyData.map((data, index) => (
-                      <div 
-                        key={index} 
-                        className={`rounded-t cursor-pointer transition-all duration-200 hover:opacity-80 ${
-                          selectedMonth === data.month ? 'bg-[#14213d] ring-2 ring-[#FFA500]' : 'bg-[#FFA500] hover:bg-[#FFA500]/90'
-                        }`}
+                    {monthlyData.map((data) => (
+                      <button 
+                        key={data.month} 
+                        className={`rounded-t cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${getMonthBarStyle(selectedMonth === data.month)}`}
                         style={{ 
                           width: '24px',
                           height: `${data.height}%` 
                         }}
                         onClick={() => handleMonthClick(data)}
+                        aria-label={`${data.fullMonth}: €${data.cost.toFixed(2)} (${data.sessions} sessions)`}
                         onMouseEnter={() => setHoveredData({ type: 'month', data })}
                         onMouseLeave={() => setHoveredData(null)}
                         title={`${data.fullMonth}: €${data.cost.toFixed(2)} (${data.sessions} sessions)`}
-                      />
+                      ></button>
                     ))}
                   </div>
                   <div className="w-full flex justify-between mt-2 text-xs text-gray-500">
-                    {monthlyData.map((data, index) => (
-                      <span 
-                        key={index}
-                        className={`cursor-pointer transition-colors ${
-                          selectedMonth === data.month ? 'text-[#FFA500] font-bold' : 'hover:text-[#FFA500]'
-                        }`}
+                    {monthlyData.map((data) => (
+                      <button 
+                        key={`label-${data.month}`}
+                        className={`cursor-pointer transition-colors border-0 bg-transparent p-0 ${getLabelStyle(selectedMonth === data.month)}`}
                         onClick={() => handleMonthClick(data)}
+                        aria-label={`Select ${data.month}`}
                       >
                         {data.month}
-                      </span>
+                      </button>
                     ))}
                   </div>
                   
                   {/* Tooltip */}
                   {hoveredData?.type === 'month' && hoveredData.data && (
                     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-black text-white p-2 rounded shadow-lg text-xs z-10">
-                      <div className="font-semibold">{hoveredData.data.fullMonth || 'Unknown Month'}</div>
-                      <div>Cost: €{(hoveredData.data.cost || 0).toFixed(2)}</div>
-                      <div>Sessions: {hoveredData.data.sessions || 0}</div>
-                      <div>Energy: {hoveredData.data.kwh || 0} kWh</div>
+                      <div className="font-semibold">{hoveredData.data.fullMonth ?? 'Unknown Month'}</div>
+                      <div>Cost: €{(hoveredData.data.cost ?? 0).toFixed(2)}</div>
+                      <div>Sessions: {hoveredData.data.sessions ?? 0}</div>
+                      <div>Energy: {hoveredData.data.kwh ?? 0} kWh</div>
                     </div>
                   )}
                 </div>
@@ -561,26 +618,24 @@ export default function DashboardPage() {
                 </div>
                 <div className="h-48 relative">
                   <div className="w-full h-[80%] flex items-end justify-around">
-                    {weeklyData.map((data, index) => (
-                      <div key={index} className="flex flex-col items-center">
-                        <div 
-                          className={`w-12 rounded-sm cursor-pointer transition-all duration-200 hover:opacity-80 ${
-                            selectedWeek === data.week ? 'bg-[#FFA500] ring-2 ring-[#14213d]' : 'bg-[#14213d] hover:bg-[#14213d]/90'
-                          }`}
+                    {weeklyData.map((data) => (
+                      <div key={data.week} className="flex flex-col items-center">
+                        <button 
+                          className={`w-12 rounded-sm cursor-pointer transition-all duration-200 hover:opacity-80 border-0 ${getWeekBarStyle(selectedWeek === data.week)}`}
                           style={{ height: `${data.height}%` }}
                           onClick={() => handleWeekClick(data)}
                           onMouseEnter={() => setHoveredData({ type: 'week', data })}
                           onMouseLeave={() => setHoveredData(null)}
+                          aria-label={`${data.week}: ${data.sessions} sessions, €${data.cost.toFixed(2)}`}
                           title={`${data.week}: ${data.sessions} sessions, €${data.cost.toFixed(2)}`}
                         />
-                        <span 
-                          className={`mt-2 text-gray-500 cursor-pointer text-xs transition-colors ${
-                            selectedWeek === data.week ? 'text-[#FFA500] font-bold' : 'hover:text-[#FFA500]'
-                          }`}
+                        <button 
+                          className={`mt-2 text-gray-500 cursor-pointer text-xs transition-colors border-0 bg-transparent p-0 ${getLabelStyle(selectedWeek === data.week)}`}
                           onClick={() => handleWeekClick(data)}
+                          aria-label={`Select ${data.week}`}
                         >
-                          W{index + 1}
-                        </span>
+                          {data.week}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -588,10 +643,10 @@ export default function DashboardPage() {
                   {/* Week Tooltip */}
                   {hoveredData?.type === 'week' && hoveredData.data && (
                     <div className="absolute top-0 right-0 bg-black text-white p-2 rounded shadow-lg text-xs z-10">
-                      <div className="font-semibold">{hoveredData.data.week || 'Unknown Week'}</div>
-                      <div>{hoveredData.data.dateRange || 'Unknown Date Range'}</div>
-                      <div>Sessions: {hoveredData.data.sessions || 0}</div>
-                      <div>Cost: €{(hoveredData.data.cost || 0).toFixed(2)}</div>
+                      <div className="font-semibold">{hoveredData.data.week ?? 'Unknown Week'}</div>
+                      <div>{hoveredData.data.dateRange ?? 'Unknown Date Range'}</div>
+                      <div>Sessions: {hoveredData.data.sessions ?? 0}</div>
+                      <div>Cost: €{(hoveredData.data.cost ?? 0).toFixed(2)}</div>
                     </div>
                   )}
                 </div>
@@ -607,8 +662,8 @@ export default function DashboardPage() {
                     <svg viewBox="0 0 400 150" className="w-full h-full">
                       {/* Trend Line */}
                       <path
-                        d={`M0,${150 - (monthlyData[4]?.height || 50)} ${monthlyData.slice(4).map((data, index) => 
-                          `L${(index + 1) * 50},${150 - (data.height || 50)}`
+                        d={`M0,${150 - (monthlyData[4]?.height ?? 50)} ${monthlyData.slice(4).map((data, index) => 
+                          `L${(index + 1) * 50},${150 - (data.height ?? 50)}`
                         ).join(' ')}`}
                         fill="none"
                         stroke="#FFA500"
@@ -616,17 +671,26 @@ export default function DashboardPage() {
                         className="hover:stroke-[#14213d] transition-colors duration-200"
                       />
                       {/* Interactive Points */}
-                      {monthlyData.slice(4).map((data, index) => (
+                      {monthlyData.slice(4).map((data) => (
                         <circle
-                          key={index}
-                          cx={(index + 1) * 50}
-                          cy={150 - (data.height || 50)}
+                          key={data.month}
+                          cx={(monthlyData.indexOf(data) - 3) * 50}
+                          cy={150 - (data.height ?? 50)}
                           r="6"
                           fill="#FFA500"
                           className="cursor-pointer hover:fill-[#14213d] transition-colors duration-200"
                           onClick={() => handleMonthClick(data)}
-                          onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (index + 1) * 50, y: 150 - (data.height || 50) })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              handleMonthClick(data)
+                            }
+                          }}
+                          onMouseEnter={() => setHoveredData({ type: 'trend', data, x: (monthlyData.indexOf(data) - 3) * 50, y: 150 - (data.height ?? 50) })}
                           onMouseLeave={() => setHoveredData(null)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${data.month}: €${(data.cost ?? 0).toFixed(2)}`}
                         />
                       ))}
                       
@@ -649,7 +713,7 @@ export default function DashboardPage() {
                             fill="white"
                             fontSize="10"
                           >
-                            {hoveredData.data.month || ''}
+                            {hoveredData.data.month ?? ''}
                           </text>
                           <text
                             x={hoveredData.x}
@@ -658,21 +722,22 @@ export default function DashboardPage() {
                             fill="white"
                             fontSize="8"
                           >
-                            €{(hoveredData.data.cost || 0).toFixed(0)}
+                            €{(hoveredData.data.cost ?? 0).toFixed(0)}
                           </text>
                         </g>
                       )}
                     </svg>
                   </div>
                   <div className="w-full flex justify-between text-xs text-gray-500">
-                    {monthlyData.slice(4).map((data, index) => (
-                      <span 
-                        key={index}
-                        className="cursor-pointer hover:text-[#FFA500] transition-colors"
+                    {monthlyData.slice(4).map((data) => (
+                      <button 
+                        key={`trend-label-${data.month}`}
+                        className="cursor-pointer hover:text-[#FFA500] transition-colors border-0 bg-transparent p-0"
                         onClick={() => handleMonthClick(data)}
+                        aria-label={`Select ${data.month}`}
                       >
                         {data.month}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -686,8 +751,7 @@ export default function DashboardPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-blue-900">
-                    {selectedMonth ? `${monthlyData.find(m => m.month === selectedMonth)?.fullMonth} Details` : 
-                     selectedWeek ? `${selectedWeek} Details` : ''}
+                    {getSelectedPeriodTitle()}
                   </h3>
                   <Button 
                     variant="outline" 
@@ -706,13 +770,13 @@ export default function DashboardPage() {
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Total Cost</p>
                     <p className="text-xl font-bold text-blue-700">
-                      €{filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || r.cost || 0), 0).toFixed(2)}
+                      €{filteredReservations.reduce((sum, r) => sum + (r.estimatedCost ?? 0), 0).toFixed(2)}
                     </p>
                   </div>
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Avg Cost per Session</p>
                     <p className="text-xl font-bold text-blue-700">
-                      €{(filteredReservations.reduce((sum, r) => sum + (r.estimatedCost || r.cost || 0), 0) / filteredReservations.length).toFixed(2)}
+                      €{(filteredReservations.reduce((sum, r) => sum + (r.estimatedCost ?? 0), 0) / filteredReservations.length).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -721,9 +785,11 @@ export default function DashboardPage() {
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {filteredReservations.slice(0, 5).map((reservation) => (
                       <div key={reservation.id} className="text-xs bg-white p-2 rounded border border-blue-200">
-                        <span className="font-medium">{reservation.stationName || `Station ${reservation.stationId}`}</span> - 
-                        <span className="ml-1">{new Date(reservation.timeSlot?.start || reservation.startTime).toLocaleDateString()}</span> - 
-                        <span className="ml-1 text-blue-600">€{(reservation.estimatedCost || reservation.cost || 0).toFixed(2)}</span>
+                        <span className="font-medium">{reservation.stationName}</span>
+                        {" - "}
+                        <span className="ml-1">{new Date(reservation.timeSlot.start).toLocaleDateString()}</span>
+                        {" - "}
+                        <span className="ml-1 text-blue-600">€{reservation.estimatedCost?.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

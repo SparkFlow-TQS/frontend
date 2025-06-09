@@ -58,9 +58,19 @@ function SchedulePageContent() {
                     const stationFromAPI = await StationAPI.getStationById(parseInt(stationId))
                     setStation(stationFromAPI)
                 } else if (stationData) {
-                    // Parse station data from URL parameters
-                    const parsedStation = JSON.parse(decodeURIComponent(stationData))
-                    setStation(parsedStation)
+                    // Parse station data from URL parameters with validation
+                    try {
+                        const parsedStation = JSON.parse(decodeURIComponent(stationData))
+                        // Basic validation of required station properties
+                        if (parsedStation && typeof parsedStation === 'object' && parsedStation.id && parsedStation.name) {
+                            setStation(parsedStation)
+                        } else {
+                            throw new Error('Invalid station data structure')
+                        }
+                    } catch (jsonError) {
+                        console.error('Invalid station data in URL parameters:', jsonError)
+                        setError('Invalid station data. Please search for a station.')
+                    }
                 }
                 // No default fallback - user must search or come from map
             } catch (error) {
@@ -163,7 +173,17 @@ function SchedulePageContent() {
 
     const handleNavigate = () => {
         if (station && typeof window !== 'undefined') {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`, '_blank')
+            // Validate coordinates before opening external URL
+            const lat = Number(station.latitude)
+            const lng = Number(station.longitude)
+            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                console.error('Invalid coordinates for navigation')
+                return
+            }
+            const newWindow = window.open('', '_blank', 'noopener,noreferrer')
+            if (newWindow) {
+                newWindow.location.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+            }
         }
     }
 
@@ -261,7 +281,7 @@ function SchedulePageContent() {
             const availabilityCheck = ReservationManager.checkAvailability(
                 station.id,
                 timeSlot,
-                station.quantityOfChargers
+                { totalChargers: station.quantityOfChargers }
             )
 
             if (availabilityCheck.availableChargers < chargerCount) {
@@ -386,24 +406,25 @@ function SchedulePageContent() {
                                     {showAutocomplete && autocompleteResults.length > 0 && (
                                         <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-30 max-h-60 overflow-y-auto">
                                             {autocompleteResults.map((result, index) => (
-                                                <div
+                                                <button
                                                     key={result.id}
-                                                    className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 ${
+                                                    className={`w-full text-left p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 border-0 ${
                                                         index === selectedSuggestionIndex ? 'bg-gray-100' : ''
                                                     }`}
                                                     onMouseDown={(e) => e.preventDefault()} // Prevent blur
                                                     onClick={() => handleAutocompleteSelect(result)}
                                                     onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                                                    aria-label={`Select station ${result.externalId ?? result.id} - ${result.name}`}
                                                 >
                                                     <div className="text-black">
                                                         <div className="font-medium text-sm">
-                                                            {result.externalId || result.id} - {result.name}
+                                                            {result.externalId ?? result.id} - {result.name}
                                                         </div>
                                                         <div className="text-xs text-gray-600">
                                                             {result.address}
                                                         </div>
                                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                                                            <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
+                                                            <span>{result.power ?? 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                             <span className={`px-1 py-0.5 rounded text-xs ${
                                                                 result.isOperational ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                             }`}>
@@ -411,7 +432,7 @@ function SchedulePageContent() {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -432,20 +453,21 @@ function SchedulePageContent() {
                                 <h3 className="text-lg font-semibold mb-4">Search Results</h3>
                                 <div className="space-y-3 max-h-96 overflow-y-auto">
                                     {searchResults.map((result) => (
-                                        <div 
+                                        <button 
                                             key={result.id}
-                                            className="bg-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-colors"
+                                            className="w-full text-left bg-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-colors border-0"
                                             onClick={() => handleSelectStation(result)}
+                                            aria-label={`Select station ${result.externalId ?? result.id} - ${result.name}`}
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-1">
                                                     <h4 className="font-semibold text-lg">
-                                                        {result.externalId || result.id} - {result.name}
+                                                        {result.externalId ?? result.id} - {result.name}
                                                     </h4>
                                                     <p className="text-sm opacity-90">{result.address}</p>
                                                     <p className="text-sm opacity-90">{result.city}, {result.country}</p>
                                                     <div className="flex items-center gap-4 mt-2 text-sm">
-                                                        <span>{result.power || 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
+                                                        <span>{result.power ?? 'N/A'} kW • {result.quantityOfChargers} {result.quantityOfChargers === 1 ? 'charger' : 'chargers'}</span>
                                                         <span className={`px-2 py-1 rounded text-xs ${
                                                             result.isOperational ? 'bg-green-600' : 'bg-red-600'
                                                         }`}>
@@ -460,7 +482,7 @@ function SchedulePageContent() {
                                                     Select
                                                 </Button>
                                             </div>
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                             </div>
@@ -509,11 +531,11 @@ function SchedulePageContent() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h2 className="text-2xl font-semibold text-[#FFA500]">
-                                        {station.externalId || station.id} - {station.name}
+                                        {station.externalId ?? station.id} - {station.name}
                                     </h2>
                                     <p className="text-lg mt-1">{station.city} • {station.address}</p>
                                     <div className="flex items-center gap-4 mt-2">
-                                        <span className="text-sm">{station.power || 'N/A'} kW</span>
+                                        <span className="text-sm">{station.power ?? 'N/A'} kW</span>
                                         <span className="text-sm">{station.quantityOfChargers} {station.quantityOfChargers === 1 ? 'charger' : 'chargers'} available</span>
                                         <span className={`px-2 py-1 rounded text-xs ${
                                             station.isOperational ? 'bg-green-600' : 'bg-red-600'
